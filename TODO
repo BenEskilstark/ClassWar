@@ -1,0 +1,17 @@
+
+- - - - - SIMULATION - - - - - -
+  - get economy going and tuned
+  - how to compute GDP -- exports/imports?
+  - add in additional factions
+
+- - - - - - POLICIES - - - - - -
+  - policy UI/implementation
+  - many policies
+
+
+- - - - - - UI - - - - - -
+  - get better display (e.g. %'s) for faction-specific props
+  - colored indicator arrow component based off of Plot
+
+
+

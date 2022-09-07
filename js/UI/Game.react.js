@@ -1,0 +1,168 @@
+// @flow
+
+const React = require('react');
+const {
+  Button, InfoCard, Divider,
+  Plot, plotReducer,
+} = require('bens_ui_components');
+const {config} = require('../config');
+const {displayMoney} = require('../utils/display');
+const {totalPopulation} = require('../selectors/selectors');
+const {initGameOverSystem} = require('../systems/gameOverSystem');
+const {initEventsSystem} = require('../systems/eventsSystem');
+const {useState, useMemo, useEffect, useReducer} = React;
+
+import type {State, Action} from '../types';
+
+type Props = {
+  state: State, // Game State
+  dispatch: (action: Action) => Action,
+};
+
+const PLOT_HEIGHT = 14;
+const PLOT_WIDTH = 120;
+const PLOT_POINTS = 300;
+
+function Game(props: Props): React.Node {
+  const {state, dispatch, store} = props;
+  const game = state.game;
+
+  // initializations
+  useEffect(() => {
+    initGameOverSystem(store);
+    initEventsSystem(store);
+  }, []);
+
+  const factions = [];
+  for (const factionName in game.factions) {
+    const faction = game.factions[factionName];
+    factions.push(<Faction
+      key={'faction_' + factionName}
+      {...faction}
+    />);
+  }
+
+  return (
+    <div>
+      <div
+        style={{
+          overflow: 'hidden',
+          width: '100%',
+          marginBottom: 6,
+        }}
+      >
+        <Info game={game} dispatch={dispatch} />
+        <Ticker game={game} />
+      </div>
+      {factions}
+    </div>
+  );
+}
+
+function Ticker(props): React.Node {
+  const {game} = props;
+  const messages = [];
+  for (let i = 0; i < game.ticker.length; i++) {
+    const message = game.ticker[i];
+    messages.push(
+      <div
+        key={"ticker_" + i}
+        style={{
+
+        }}
+      >
+        {message}
+      </div>
+    );
+  }
+  return (
+    <InfoCard
+      style={{
+        height: 128,
+        padding: 4,
+        marginTop: 4,
+        marginRight: 4,
+        overflow: 'hidden',
+        display: 'block',
+      }}
+    >
+      {messages}
+    </InfoCard>
+  );
+}
+
+function Info(props): React.Node {
+  const {game, dispatch} = props;
+
+  return (
+    <InfoCard
+      style={{
+        width: 375,
+        float: 'left',
+        marginTop: 4,
+        marginRight: 4,
+      }}
+    >
+      <div>
+        Capital: ${game.capital}
+      </div>
+      <div>
+        GDP: ${game.gdp}
+      </div>
+      <Button
+        label={'STEP SIM'}
+        onClick={() => {
+          dispatch({type: 'TICK'});
+        }}
+      />
+      <Button
+        id={game.tickInterval ? '' : 'PLAY'}
+        label={game.tickInterval ? 'Pause Simulation' : 'Start Simulation'}
+        onClick={() => {
+          // dispatch({type: 'TICK'});
+          if (game.tickInterval) {
+            dispatch({type: 'STOP_TICK'});
+          } else {
+            dispatch({type: 'START_TICK'});
+          }
+        }}
+      />
+    </InfoCard>
+  );
+}
+
+function Faction(properties): React.Node {
+  const {
+    name, wealth, taxRate, subsidy,
+    population, favorability, props,
+  } = properties;
+
+  const propList = [];
+  for (const propName in props) {
+    propList.push(
+      <div key={'prop_' + name + '_' + propName}>
+        {propName}: {props[propName]}
+      </div>
+    );
+  }
+
+  return (
+    <InfoCard
+      style={{
+        width: 375,
+      }}
+    >
+      <div><b>{name}</b></div>
+      <div>Wealth: {displayMoney(wealth)}</div>
+      <div>Tax Rate: {taxRate * 100}%</div>
+      <div>Subsidy: {displayMoney(subsidy)}</div>
+      <div>Population: {population}</div>
+      <div>Favorability: {favorability}</div>
+      <Divider />
+      {propList}
+    </InfoCard>
+  );
+}
+
+
+module.exports = Game;
