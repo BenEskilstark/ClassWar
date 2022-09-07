@@ -50,7 +50,7 @@ const config = {
 
     // Intelligentsia -- produce production and skill gains (+ subsidy)
 
-    // Army -- cost money for upkeep (subsidy)
+    // Military -- cost money for upkeep (subsidy)
 
     // Landowners -- produce food, charge rent
   },

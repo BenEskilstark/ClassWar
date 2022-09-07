@@ -90,9 +90,7 @@ var _require = require('../config'),
     config = _require.config;
 
 var _require2 = require('../selectors/selectors'),
-    getCommodity = _require2.getCommodity,
-    subtractWithDeficit = _require2.subtractWithDeficit,
-    totalPopulation = _require2.totalPopulation;
+    subtractWithDeficit = _require2.subtractWithDeficit;
 
 var gameReducer = function gameReducer(game, action) {
   switch (action.type) {
@@ -121,21 +119,82 @@ var gameReducer = function gameReducer(game, action) {
       {
         game.time += 1;
 
-        // corporations:
-        // compute payment to middle/lower classes (w/ tax)
+        // subsidies (for every faction)
+
+        var corps = game.factions['Corporations'];
+        var mids = game.factions['Middle Class'];
+        var poors = game.factions['Working Class'];
+        // const nerds = game.factions['Intelligentsia'];
+        // const army = game.factions['Military'];
+        // const lords = game.factions['Landowners'];
+
+        // compute payment to middle class (with tax)
+        var employedMids = mids.population * (1 - mids.props.unemployment);
+        var midPay = employedMids * mids.props.wage;
+
+        var _subtractWithDeficit = subtractWithDeficit(corps.wealth, midPay, mids.props.wage),
+            nextCorpWealth = _subtractWithDeficit.result,
+            corpWealthDeficit = _subtractWithDeficit.deficit,
+            midsWagesPaid = _subtractWithDeficit.amount;
+
+        var midsActuallyPaid = corpWealthDeficit == 0 ? employedMids : midsWagesPaid / mids.props.wage;
+
+        var midsTaxesCollected = midsWagesPaid * mids.taxRate;
+        game.capital += midsTaxesCollected;
+        mids.wealth += midsWagesPaid - midsTaxesCollected;
+        corps.wealth = nextCorpWealth;
+        // TODO: compute unfavorability/unemployement if corp can't pay
+        if (corpWealthDeficit != 0) {
+          console.log("corps can't pay mids", corpWealthDeficit);
+        }
+
+        // compute payment to working class (with tax)
+        var employedPoors = poors.population * (1 - poors.props.unemployment);
+        var poorPay = employedPoors * poors.props.wage;
+
+        var _subtractWithDeficit2 = subtractWithDeficit(corps.wealth, poorPay, poors.props.wage),
+            nextCorpWealth2 = _subtractWithDeficit2.result,
+            corpWealthDeficit2 = _subtractWithDeficit2.deficit,
+            poorsWagesPaid = _subtractWithDeficit2.amount;
+
+        var poorsActuallyPaid = corpWealthDeficit2 == 0 ? employedPoors : poorsWagesPaid / poors.props.wage;
+
+        var poorsTaxesCollected = poorsWagesPaid * poors.taxRate;
+        game.capital += poorsTaxesCollected;
+        poors.wealth += poorsWagesPaid - poorsTaxesCollected;
+        corps.wealth = nextCorpWealth2;
+        // TODO: compute unfavorability/unemployement if corp can't pay
+        if (corpWealthDeficit2 != 0) {
+          console.log("corps can't pay ppors", corpWealthDeficit2);
+        }
+
         // compute production of goods
+        var totalGoods = 0;
+        totalGoods += midsActuallyPaid * mids.props.skill * corps.props.production;
+        totalGoods += poorsActuallyPaid * corps.props.production;
+
         // compute purchase of goods (w/ tax)
+        var midSpend = mids.wealth * mids.props.consumerism;
+        mids.wealth -= midSpend;
+        var poorSpend = poors.wealth * poors.props.consumerism;
+        poors.wealth -= poorSpend;
+        var corpProfit = midSpend + poorSpend;
+        var corpTaxesCollected = corpProfit * corps.taxRate;
+        game.capital += corpTaxesCollected;
+        corps.wealth += corpProfit - corpTaxesCollected;
+
         // compute gdp
         // compute favorability (gdp change, taxRate, wealth)
 
         // middle/lower class
         // compute favorability (unemployment, wealth, taxRate)
 
+        // compute social mobility
+
         // intelligentsia
         // compute production and skill gains
 
         // army
-        // subsidies (for every faction)
 
         // landowners
         // produce food, charge rent
@@ -184,15 +243,15 @@ var gameReducer = function gameReducer(game, action) {
         var _commodity = getCommodity(game, _name);
         if (laborChange < 0) {
           // unassigning labor
-          var _subtractWithDeficit = subtractWithDeficit(_commodity.laborAssigned, -1 * laborChange),
-              laborAmount = _subtractWithDeficit.amount;
+          var _subtractWithDeficit3 = subtractWithDeficit(_commodity.laborAssigned, -1 * laborChange),
+              laborAmount = _subtractWithDeficit3.amount;
 
           _commodity.laborAssigned -= laborAmount;
           game.labor += laborAmount;
         } else {
           // assigning labor
-          var _subtractWithDeficit2 = subtractWithDeficit(game.labor, laborChange),
-              _laborAmount = _subtractWithDeficit2.amount;
+          var _subtractWithDeficit4 = subtractWithDeficit(game.labor, laborChange),
+              _laborAmount = _subtractWithDeficit4.amount;
 
           _commodity.laborAssigned += _laborAmount;
           game.labor -= _laborAmount;
@@ -847,7 +906,7 @@ module.exports = Main;
 
 var displayMoney = function displayMoney(money) {
   if (money < 1000000) {
-    return '$' + Number(Math.floor(money)).toLocaleString();
+    return '$' + Number(Math.floor(money)).toFixed(2).toLocaleString();
   } else {
     return '$' + (money / 1000000).toFixed(1) + 'M';
   }
