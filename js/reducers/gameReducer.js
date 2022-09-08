@@ -1,6 +1,7 @@
 // @flow
 
 const {config} = require('../config');
+const {displayMoney, displayPercent} = require('../utils/display');
 const {
   subtractWithDeficit,
 } = require('../selectors/selectors');
@@ -31,6 +32,20 @@ const gameReducer = (game, action) => {
       game.time += 1;
 
       // subsidies (for every faction)
+      for (const factionName in game.factions) {
+        const faction = game.factions[factionName];
+        const {
+          result: nextCapital,
+          deficit: capitalDeficit,
+          amount: subsidyPaid,
+        } = subtractWithDeficit(game.capital, faction.subsidy);
+        game.capital = nextCapital;
+        faction.wealth += subsidyPaid;
+        // TODO: compute unfavorability if can't afford subsidy
+        if (capitalDeficit != 0) {
+          console.log("gov can't pay subsidy", factionName, capitalDeficit);
+        }
+      }
 
       const corps = game.factions['Corporations'];
       const mids = game.factions['Middle Class'];
@@ -79,7 +94,7 @@ const gameReducer = (game, action) => {
       corps.wealth = nextCorpWealth2;
       // TODO: compute unfavorability/unemployement if corp can't pay
       if (corpWealthDeficit2 != 0) {
-        console.log("corps can't pay ppors", corpWealthDeficit2);
+        console.log("corps can't pay poors", corpWealthDeficit2);
       }
 
       // compute production of goods

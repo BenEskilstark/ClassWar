@@ -5,7 +5,30 @@ var _factions;
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
+var _require$stochastic = require('bens_utils').stochastic,
+    randomIn = _require$stochastic.randomIn,
+    normalIn = _require$stochastic.normalIn;
+
+// function to potentially initialize with randomized values
+
+
+var IS_RANDOMIZED = true;
+
+var val = function val(base, min, max, isNormal) {
+  if (!IS_RANDOMIZED) return base;
+  // handle floats between 0 and 1
+  var mult = 1;
+  if (min > 0 && min < 1 || max > 0 && max <= 1) {
+    mult = 100;
+  }
+  if (isNormal) {
+    return normalIn(min * mult, max * mult) / mult;
+  }
+  return randomIn(min * mult, max * mult) / mult;
+};
+
 var config = {
+  isRandomized: IS_RANDOMIZED,
   msPerTick: 1000,
   maxTickerLength: 7,
 
@@ -14,37 +37,37 @@ var config = {
   factions: (_factions = {}, _defineProperty(_factions, 'Corporations', {
     name: 'Corporations',
     wealth: 500000,
-    taxRate: 0.2,
-    subsidy: 0,
-    population: 50,
-    favorability: 50,
+    taxRate: val(0.2, 0, 0.5),
+    subsidy: val(0, 0, 50000),
+    population: val(50, 1, 100, true),
+    favorability: val(50, 1, 100, true),
     props: {
-      production: 10 // value multiplier for each corp
+      production: val(10, 1, 50, true) // value multiplier for each corp
     }
   }), _defineProperty(_factions, 'Middle Class', {
     name: 'Middle Class',
     wealth: 50000,
-    taxRate: 0.4,
-    subsidy: 0,
-    population: 1000,
-    favorability: 50,
+    taxRate: val(0.4, 0, 0.7),
+    subsidy: val(0, 0, 5000),
+    population: val(1000, 100, 10000),
+    favorability: val(50, 1, 100, true),
     props: {
-      unemployment: 0.1, // rate of not employed
-      wage: 10, // wage going to each employed person
-      skill: 5, // how much more productive than working class each employed person is
-      consumerism: 0.5 // how much wealth goes to buying things
+      unemployment: val(0.1, 0, 0.8), // rate of not employed
+      wage: val(10, 2, 30, true), // wage going to each employed person
+      skill: val(5, 1, 10), // how much more productive than working class each employed person is
+      consumerism: val(0.5, 0.1, 0.99) // how much wealth goes to buying things
     }
   }), _defineProperty(_factions, 'Working Class', {
     name: 'Working Class',
-    wealth: 0,
-    taxRate: 0.3,
-    subsidy: 0,
-    population: 10000,
-    favorability: 50,
+    wealth: val(0, 0, 10000),
+    taxRate: val(0.3, 0, 0.7),
+    subsidy: val(0, 0, 5000),
+    population: val(10000, 1000, 100000),
+    favorability: val(50, 1, 100, true),
     props: {
-      unemployment: 0.1, // rate of not employed
-      wage: 3, // wage going to each employed person
-      consumerism: 0.9 // how much wealth goes to buying things
+      unemployment: val(0.1, 0, 0.9), // rate of not employed
+      wage: val(3, 1, 6), // wage going to each employed person
+      consumerism: val(0.9, 0.1, 0.99) // how much wealth goes to buying things
     }
   }), _factions)
 };
@@ -52,7 +75,7 @@ var config = {
 module.exports = {
   config: config
 };
-},{}],2:[function(require,module,exports){
+},{"bens_utils":37}],2:[function(require,module,exports){
 'use strict';
 
 var _require = require('redux'),
@@ -81,7 +104,7 @@ function renderUI(store) {
     modal: state.modal
   }), document.getElementById('container'));
 }
-},{"./reducers/rootReducer":5,"./ui/Main.react":10,"react":43,"react-dom":40,"redux":44}],3:[function(require,module,exports){
+},{"./reducers/rootReducer":5,"./ui/Main.react":11,"react":44,"react-dom":41,"redux":45}],3:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -89,8 +112,12 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 var _require = require('../config'),
     config = _require.config;
 
-var _require2 = require('../selectors/selectors'),
-    subtractWithDeficit = _require2.subtractWithDeficit;
+var _require2 = require('../utils/display'),
+    displayMoney = _require2.displayMoney,
+    displayPercent = _require2.displayPercent;
+
+var _require3 = require('../selectors/selectors'),
+    subtractWithDeficit = _require3.subtractWithDeficit;
 
 var gameReducer = function gameReducer(game, action) {
   switch (action.type) {
@@ -120,6 +147,21 @@ var gameReducer = function gameReducer(game, action) {
         game.time += 1;
 
         // subsidies (for every faction)
+        for (var factionName in game.factions) {
+          var faction = game.factions[factionName];
+
+          var _subtractWithDeficit = subtractWithDeficit(game.capital, faction.subsidy),
+              nextCapital = _subtractWithDeficit.result,
+              capitalDeficit = _subtractWithDeficit.deficit,
+              subsidyPaid = _subtractWithDeficit.amount;
+
+          game.capital = nextCapital;
+          faction.wealth += subsidyPaid;
+          // TODO: compute unfavorability if can't afford subsidy
+          if (capitalDeficit != 0) {
+            console.log("gov can't pay subsidy", factionName, capitalDeficit);
+          }
+        }
 
         var corps = game.factions['Corporations'];
         var mids = game.factions['Middle Class'];
@@ -132,10 +174,10 @@ var gameReducer = function gameReducer(game, action) {
         var employedMids = mids.population * (1 - mids.props.unemployment);
         var midPay = employedMids * mids.props.wage;
 
-        var _subtractWithDeficit = subtractWithDeficit(corps.wealth, midPay, mids.props.wage),
-            nextCorpWealth = _subtractWithDeficit.result,
-            corpWealthDeficit = _subtractWithDeficit.deficit,
-            midsWagesPaid = _subtractWithDeficit.amount;
+        var _subtractWithDeficit2 = subtractWithDeficit(corps.wealth, midPay, mids.props.wage),
+            nextCorpWealth = _subtractWithDeficit2.result,
+            corpWealthDeficit = _subtractWithDeficit2.deficit,
+            midsWagesPaid = _subtractWithDeficit2.amount;
 
         var midsActuallyPaid = corpWealthDeficit == 0 ? employedMids : midsWagesPaid / mids.props.wage;
 
@@ -152,10 +194,10 @@ var gameReducer = function gameReducer(game, action) {
         var employedPoors = poors.population * (1 - poors.props.unemployment);
         var poorPay = employedPoors * poors.props.wage;
 
-        var _subtractWithDeficit2 = subtractWithDeficit(corps.wealth, poorPay, poors.props.wage),
-            nextCorpWealth2 = _subtractWithDeficit2.result,
-            corpWealthDeficit2 = _subtractWithDeficit2.deficit,
-            poorsWagesPaid = _subtractWithDeficit2.amount;
+        var _subtractWithDeficit3 = subtractWithDeficit(corps.wealth, poorPay, poors.props.wage),
+            nextCorpWealth2 = _subtractWithDeficit3.result,
+            corpWealthDeficit2 = _subtractWithDeficit3.deficit,
+            poorsWagesPaid = _subtractWithDeficit3.amount;
 
         var poorsActuallyPaid = corpWealthDeficit2 == 0 ? employedPoors : poorsWagesPaid / poors.props.wage;
 
@@ -165,7 +207,7 @@ var gameReducer = function gameReducer(game, action) {
         corps.wealth = nextCorpWealth2;
         // TODO: compute unfavorability/unemployement if corp can't pay
         if (corpWealthDeficit2 != 0) {
-          console.log("corps can't pay ppors", corpWealthDeficit2);
+          console.log("corps can't pay poors", corpWealthDeficit2);
         }
 
         // compute production of goods
@@ -243,15 +285,15 @@ var gameReducer = function gameReducer(game, action) {
         var _commodity = getCommodity(game, _name);
         if (laborChange < 0) {
           // unassigning labor
-          var _subtractWithDeficit3 = subtractWithDeficit(_commodity.laborAssigned, -1 * laborChange),
-              laborAmount = _subtractWithDeficit3.amount;
+          var _subtractWithDeficit4 = subtractWithDeficit(_commodity.laborAssigned, -1 * laborChange),
+              laborAmount = _subtractWithDeficit4.amount;
 
           _commodity.laborAssigned -= laborAmount;
           game.labor += laborAmount;
         } else {
           // assigning labor
-          var _subtractWithDeficit4 = subtractWithDeficit(game.labor, laborChange),
-              _laborAmount = _subtractWithDeficit4.amount;
+          var _subtractWithDeficit5 = subtractWithDeficit(game.labor, laborChange),
+              _laborAmount = _subtractWithDeficit5.amount;
 
           _commodity.laborAssigned += _laborAmount;
           game.labor -= _laborAmount;
@@ -279,7 +321,7 @@ function appendTicker(game, message) {
 }
 
 module.exports = { gameReducer: gameReducer };
-},{"../config":1,"../selectors/selectors":6}],4:[function(require,module,exports){
+},{"../config":1,"../selectors/selectors":6,"../utils/display":12}],4:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -395,7 +437,7 @@ var initGameState = function initGameState() {
 };
 
 module.exports = { rootReducer: rootReducer };
-},{"../config":1,"../selectors/selectors":6,"./gameReducer":3,"./modalReducer":4,"bens_utils":36}],6:[function(require,module,exports){
+},{"../config":1,"../selectors/selectors":6,"./gameReducer":3,"./modalReducer":4,"bens_utils":37}],6:[function(require,module,exports){
 "use strict";
 
 // when you want to do A - B, but A must always be >= 0, and you need
@@ -466,7 +508,7 @@ var initEventsSystem = function initEventsSystem(store) {
 };
 
 module.exports = { initEventsSystem: initEventsSystem };
-},{"react":43}],8:[function(require,module,exports){
+},{"react":44}],8:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -594,7 +636,7 @@ var handleGameWon = function handleGameWon(store, dispatch, state, reason) {
 };
 
 module.exports = { initGameOverSystem: initGameOverSystem };
-},{"bens_ui_components":29,"react":43}],9:[function(require,module,exports){
+},{"bens_ui_components":30,"react":44}],9:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -608,11 +650,14 @@ var _require = require('bens_ui_components'),
     Plot = _require.Plot,
     plotReducer = _require.plotReducer;
 
+var Indicator = require('./Indicator.react');
+
 var _require2 = require('../config'),
     config = _require2.config;
 
 var _require3 = require('../utils/display'),
-    displayMoney = _require3.displayMoney;
+    displayMoney = _require3.displayMoney,
+    displayPercent = _require3.displayPercent;
 
 var _require4 = require('../selectors/selectors'),
     totalPopulation = _require4.totalPopulation;
@@ -722,8 +767,10 @@ function Info(props) {
     React.createElement(
       'div',
       null,
-      'Capital: $',
-      game.capital
+      'Capital: ',
+      displayMoney(game.capital),
+      ' ',
+      React.createElement(Indicator, { value: game.capital })
     ),
     React.createElement(
       'div',
@@ -731,12 +778,16 @@ function Info(props) {
       'GDP: $',
       game.gdp
     ),
-    React.createElement(Button, {
-      label: 'STEP SIM',
-      onClick: function onClick() {
-        dispatch({ type: 'TICK' });
-      }
-    }),
+    React.createElement(
+      'div',
+      null,
+      React.createElement(Button, {
+        label: 'STEP SIM',
+        onClick: function onClick() {
+          dispatch({ type: 'TICK' });
+        }
+      })
+    ),
     React.createElement(Button, {
       id: game.tickInterval ? '' : 'PLAY',
       label: game.tickInterval ? 'Pause Simulation' : 'Start Simulation',
@@ -769,7 +820,9 @@ function Faction(properties) {
       { key: 'prop_' + name + '_' + propName },
       propName,
       ': ',
-      props[propName]
+      props[propName],
+      ' ',
+      React.createElement(Indicator, { value: props[propName] })
     ));
   }
 
@@ -793,32 +846,41 @@ function Faction(properties) {
       'div',
       null,
       'Wealth: ',
-      displayMoney(wealth)
+      displayMoney(wealth),
+      ' ',
+      React.createElement(Indicator, { value: wealth, minChange: 1 })
     ),
     React.createElement(
       'div',
       null,
       'Tax Rate: ',
-      taxRate * 100,
-      '%'
+      displayPercent(taxRate),
+      ' ',
+      React.createElement(Indicator, { value: taxRate })
     ),
     React.createElement(
       'div',
       null,
       'Subsidy: ',
-      displayMoney(subsidy)
+      displayMoney(subsidy),
+      ' ',
+      React.createElement(Indicator, { value: subsidy, minChange: 1 })
     ),
     React.createElement(
       'div',
       null,
       'Population: ',
-      population
+      population,
+      ' ',
+      React.createElement(Indicator, { value: population })
     ),
     React.createElement(
       'div',
       null,
       'Favorability: ',
-      favorability
+      favorability,
+      ' ',
+      React.createElement(Indicator, { value: favorability })
     ),
     React.createElement(Divider, null),
     propList
@@ -826,7 +888,74 @@ function Faction(properties) {
 }
 
 module.exports = Game;
-},{"../config":1,"../selectors/selectors":6,"../systems/eventsSystem":7,"../systems/gameOverSystem":8,"../utils/display":11,"bens_ui_components":29,"react":43}],10:[function(require,module,exports){
+},{"../config":1,"../selectors/selectors":6,"../systems/eventsSystem":7,"../systems/gameOverSystem":8,"../utils/display":12,"./Indicator.react":10,"bens_ui_components":30,"react":44}],10:[function(require,module,exports){
+'use strict';
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+var React = require('react');
+var useState = React.useState,
+    useMemo = React.useMemo,
+    useEffect = React.useEffect,
+    useReducer = React.useReducer;
+
+/**
+ *
+ * props:
+ *   value: number, // will watch for changes in this value
+ *   minChange: ?number, // changes smaller than this won't be registered
+ */
+
+var Indicator = function Indicator(props) {
+  // track points with watching
+  var _useReducer = useReducer(function (state, action) {
+    var value = action.value;
+
+    return {
+      prev: state.value,
+      value: value
+    };
+  }, { value: props.value, prev: props.value }),
+      _useReducer2 = _slicedToArray(_useReducer, 2),
+      indicator = _useReducer2[0],
+      dispatch = _useReducer2[1];
+
+  useEffect(function () {
+    dispatch({ type: 'SET', value: props.value });
+  }, [props.value, dispatch]);
+
+  var minChange = props.minChange ? props.minChange : 0;
+  var change = indicator.value - indicator.prev;
+  var color = 'black';
+  var symbol = '-';
+  if (Math.abs(change) > minChange) {
+    if (change > 0) {
+      color = 'green';
+      symbol = '^';
+    } else {
+      color = 'red';
+      symbol = 'V';
+    }
+  }
+
+  return React.createElement(
+    'div',
+    {
+      style: {
+        display: 'inline',
+        color: color
+      }
+    },
+    React.createElement(
+      'b',
+      null,
+      symbol
+    )
+  );
+};
+
+module.exports = Indicator;
+},{"react":44}],11:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -901,21 +1030,30 @@ function PlayModal(props) {
 }
 
 module.exports = Main;
-},{"./Game.react":9,"bens_ui_components":29,"react":43}],11:[function(require,module,exports){
+},{"./Game.react":9,"bens_ui_components":30,"react":44}],12:[function(require,module,exports){
 'use strict';
 
 var displayMoney = function displayMoney(money) {
   if (money < 1000000) {
-    return '$' + Number(Math.floor(money)).toFixed(2).toLocaleString();
+    return '$' + Number(Math.floor(money)).toLocaleString();
   } else {
-    return '$' + (money / 1000000).toFixed(1) + 'M';
+    return '$' + (money / 1000000).toFixed(2) + 'M';
   }
 };
 
-module.exports = {
-  displayMoney: displayMoney
+var displayPercent = function displayPercent(percent) {
+  var diff = percent * 100 - Math.floor(percent * 100);
+  if (diff >= 0.01) {
+    return (percent * 100).toFixed(2) + '%';
+  }
+  return (percent * 100).toFixed(0) + '%';
 };
-},{}],12:[function(require,module,exports){
+
+module.exports = {
+  displayMoney: displayMoney,
+  displayPercent: displayPercent
+};
+},{}],13:[function(require,module,exports){
 function _defineProperty(obj, key, value) {
   if (key in obj) {
     Object.defineProperty(obj, key, {
@@ -932,7 +1070,7 @@ function _defineProperty(obj, key, value) {
 }
 
 module.exports = _defineProperty, module.exports.__esModule = true, module.exports["default"] = module.exports;
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 var defineProperty = require("./defineProperty.js");
 
 function ownKeys(object, enumerableOnly) {
@@ -962,7 +1100,7 @@ function _objectSpread2(target) {
 }
 
 module.exports = _objectSpread2, module.exports.__esModule = true, module.exports["default"] = module.exports;
-},{"./defineProperty.js":12}],14:[function(require,module,exports){
+},{"./defineProperty.js":13}],15:[function(require,module,exports){
 'use strict';
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
@@ -1056,7 +1194,7 @@ var AudioWidget = function AudioWidget(props) {
 };
 
 module.exports = AudioWidget;
-},{"./Button.react":15,"react":43}],15:[function(require,module,exports){
+},{"./Button.react":16,"react":44}],16:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -1143,7 +1281,7 @@ function Button(props) {
 }
 
 module.exports = Button;
-},{"react":43}],16:[function(require,module,exports){
+},{"react":44}],17:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -1283,7 +1421,7 @@ function withPropsChecker(WrappedComponent) {
 }
 
 module.exports = React.memo(Canvas);
-},{"react":43}],17:[function(require,module,exports){
+},{"react":44}],18:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -1323,7 +1461,7 @@ function Checkbox(props) {
 }
 
 module.exports = Checkbox;
-},{"react":43}],18:[function(require,module,exports){
+},{"react":44}],19:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -1343,7 +1481,7 @@ function Divider(props) {
 }
 
 module.exports = Divider;
-},{"react":43}],19:[function(require,module,exports){
+},{"react":44}],20:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -1384,7 +1522,7 @@ var Dropdown = function Dropdown(props) {
 };
 
 module.exports = Dropdown;
-},{"react":43}],20:[function(require,module,exports){
+},{"react":44}],21:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -1415,7 +1553,7 @@ var InfoCard = function InfoCard(props) {
 };
 
 module.exports = InfoCard;
-},{"react":43}],21:[function(require,module,exports){
+},{"react":44}],22:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -1499,7 +1637,7 @@ function Modal(props) {
 }
 
 module.exports = Modal;
-},{"./Button.react":15,"bens_utils":36,"react":43}],22:[function(require,module,exports){
+},{"./Button.react":16,"bens_utils":37,"react":44}],23:[function(require,module,exports){
 'use strict';
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
@@ -1589,7 +1727,7 @@ var submitValue = function submitValue(onChange, nextVal, onlyInt) {
 };
 
 module.exports = NumberField;
-},{"react":43}],23:[function(require,module,exports){
+},{"react":44}],24:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -1956,7 +2094,7 @@ var PlotWatcher = function PlotWatcher(props) {
 };
 
 module.exports = PlotWatcher;
-},{"./Button.react":15,"./Canvas.react":16,"react":43}],24:[function(require,module,exports){
+},{"./Button.react":16,"./Canvas.react":17,"react":44}],25:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -2040,7 +2178,7 @@ var quitGameModal = function quitGameModal(dispatch) {
 };
 
 module.exports = QuitButton;
-},{"./Button.react":15,"./Modal.react":21,"bens_utils":36,"react":43}],25:[function(require,module,exports){
+},{"./Button.react":16,"./Modal.react":22,"bens_utils":37,"react":44}],26:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -2129,7 +2267,7 @@ var RadioPicker = function (_React$Component) {
 }(React.Component);
 
 module.exports = RadioPicker;
-},{"react":43}],26:[function(require,module,exports){
+},{"react":44}],27:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -2199,7 +2337,7 @@ function Slider(props) {
 }
 
 module.exports = Slider;
-},{"./NumberField.react":22,"react":43}],27:[function(require,module,exports){
+},{"./NumberField.react":23,"react":44}],28:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -2506,7 +2644,7 @@ function Table(props) {
 }
 
 module.exports = Table;
-},{"./Button.react":15,"./Dropdown.react":19,"react":43}],28:[function(require,module,exports){
+},{"./Button.react":16,"./Dropdown.react":20,"react":44}],29:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -2595,7 +2733,7 @@ var plotReducer = function plotReducer(state, action) {
 };
 
 module.exports = { plotReducer: plotReducer };
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 
 module.exports = {
   AudioWidget: require('./bin/AudioWidget.react.js'),
@@ -2615,7 +2753,7 @@ module.exports = {
   Table: require('./bin/Table.react.js'),
 };
 
-},{"./bin/AudioWidget.react.js":14,"./bin/Button.react.js":15,"./bin/Canvas.react.js":16,"./bin/Checkbox.react.js":17,"./bin/Divider.react.js":18,"./bin/Dropdown.react.js":19,"./bin/InfoCard.react.js":20,"./bin/Modal.react.js":21,"./bin/NumberField.react.js":22,"./bin/Plot.react.js":23,"./bin/QuitButton.react.js":24,"./bin/RadioPicker.react.js":25,"./bin/Slider.react.js":26,"./bin/Table.react.js":27,"./bin/plotReducer.js":28}],30:[function(require,module,exports){
+},{"./bin/AudioWidget.react.js":15,"./bin/Button.react.js":16,"./bin/Canvas.react.js":17,"./bin/Checkbox.react.js":18,"./bin/Divider.react.js":19,"./bin/Dropdown.react.js":20,"./bin/InfoCard.react.js":21,"./bin/Modal.react.js":22,"./bin/NumberField.react.js":23,"./bin/Plot.react.js":24,"./bin/QuitButton.react.js":25,"./bin/RadioPicker.react.js":26,"./bin/Slider.react.js":27,"./bin/Table.react.js":28,"./bin/plotReducer.js":29}],31:[function(require,module,exports){
 'use strict';
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
@@ -2779,7 +2917,7 @@ module.exports = {
   getEntityPositions: getEntityPositions,
   entityInsideGrid: entityInsideGrid
 };
-},{"./helpers":31,"./math":32,"./vectors":35}],31:[function(require,module,exports){
+},{"./helpers":32,"./math":33,"./vectors":36}],32:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -2926,7 +3064,7 @@ module.exports = {
   deepCopy: deepCopy,
   throttle: throttle
 };
-},{"./vectors":35}],32:[function(require,module,exports){
+},{"./vectors":36}],33:[function(require,module,exports){
 "use strict";
 
 var clamp = function clamp(val, min, max) {
@@ -2971,7 +3109,7 @@ module.exports = {
   clamp: clamp,
   subtractWithDeficit: subtractWithDeficit
 };
-},{}],33:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 'use strict';
 
 function isIpad() {
@@ -2997,7 +3135,7 @@ module.exports = {
   isIpad: isIpad,
   isMobile: isMobile
 };
-},{}],34:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 "use strict";
 
 var floor = Math.floor,
@@ -3052,7 +3190,7 @@ module.exports = {
   oneOf: oneOf,
   weightedOneOf: weightedOneOf
 };
-},{}],35:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 "use strict";
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -3251,7 +3389,7 @@ module.exports = {
   rotate: rotate,
   abs: abs
 };
-},{}],36:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 
 module.exports = {
   vectors: require('./bin/vectors'),
@@ -3262,7 +3400,7 @@ module.exports = {
   math: require('./bin/math'),
 }
 
-},{"./bin/gridHelpers":30,"./bin/helpers":31,"./bin/math":32,"./bin/platform":33,"./bin/stochastic":34,"./bin/vectors":35}],37:[function(require,module,exports){
+},{"./bin/gridHelpers":31,"./bin/helpers":32,"./bin/math":33,"./bin/platform":34,"./bin/stochastic":35,"./bin/vectors":36}],38:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -3354,7 +3492,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],38:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 (function (process){(function (){
 /** @license React v17.0.2
  * react-dom.development.js
@@ -29620,7 +29758,7 @@ exports.version = ReactVersion;
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":51,"object-assign":37,"react":43,"scheduler":49,"scheduler/tracing":50}],39:[function(require,module,exports){
+},{"_process":52,"object-assign":38,"react":44,"scheduler":50,"scheduler/tracing":51}],40:[function(require,module,exports){
 /** @license React v17.0.2
  * react-dom.production.min.js
  *
@@ -29919,7 +30057,7 @@ exports.findDOMNode=function(a){if(null==a)return null;if(1===a.nodeType)return 
 exports.render=function(a,b,c){if(!rk(b))throw Error(y(200));return tk(null,a,b,!1,c)};exports.unmountComponentAtNode=function(a){if(!rk(a))throw Error(y(40));return a._reactRootContainer?(Xj(function(){tk(null,null,a,!1,function(){a._reactRootContainer=null;a[ff]=null})}),!0):!1};exports.unstable_batchedUpdates=Wj;exports.unstable_createPortal=function(a,b){return uk(a,b,2<arguments.length&&void 0!==arguments[2]?arguments[2]:null)};
 exports.unstable_renderSubtreeIntoContainer=function(a,b,c,d){if(!rk(c))throw Error(y(200));if(null==a||void 0===a._reactInternals)throw Error(y(38));return tk(a,b,c,!1,d)};exports.version="17.0.2";
 
-},{"object-assign":37,"react":43,"scheduler":49}],40:[function(require,module,exports){
+},{"object-assign":38,"react":44,"scheduler":50}],41:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -29961,7 +30099,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react-dom.development.js":38,"./cjs/react-dom.production.min.js":39,"_process":51}],41:[function(require,module,exports){
+},{"./cjs/react-dom.development.js":39,"./cjs/react-dom.production.min.js":40,"_process":52}],42:[function(require,module,exports){
 (function (process){(function (){
 /** @license React v17.0.2
  * react.development.js
@@ -32298,7 +32436,7 @@ exports.version = ReactVersion;
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":51,"object-assign":37}],42:[function(require,module,exports){
+},{"_process":52,"object-assign":38}],43:[function(require,module,exports){
 /** @license React v17.0.2
  * react.production.min.js
  *
@@ -32323,7 +32461,7 @@ key:d,ref:k,props:e,_owner:h}};exports.createContext=function(a,b){void 0===b&&(
 exports.lazy=function(a){return{$$typeof:v,_payload:{_status:-1,_result:a},_init:Q}};exports.memo=function(a,b){return{$$typeof:u,type:a,compare:void 0===b?null:b}};exports.useCallback=function(a,b){return S().useCallback(a,b)};exports.useContext=function(a,b){return S().useContext(a,b)};exports.useDebugValue=function(){};exports.useEffect=function(a,b){return S().useEffect(a,b)};exports.useImperativeHandle=function(a,b,c){return S().useImperativeHandle(a,b,c)};
 exports.useLayoutEffect=function(a,b){return S().useLayoutEffect(a,b)};exports.useMemo=function(a,b){return S().useMemo(a,b)};exports.useReducer=function(a,b,c){return S().useReducer(a,b,c)};exports.useRef=function(a){return S().useRef(a)};exports.useState=function(a){return S().useState(a)};exports.version="17.0.2";
 
-},{"object-assign":37}],43:[function(require,module,exports){
+},{"object-assign":38}],44:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -32334,7 +32472,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react.development.js":41,"./cjs/react.production.min.js":42,"_process":51}],44:[function(require,module,exports){
+},{"./cjs/react.development.js":42,"./cjs/react.production.min.js":43,"_process":52}],45:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -33035,7 +33173,7 @@ exports.compose = compose;
 exports.createStore = createStore;
 
 }).call(this)}).call(this,require('_process'))
-},{"@babel/runtime/helpers/objectSpread2":13,"_process":51}],45:[function(require,module,exports){
+},{"@babel/runtime/helpers/objectSpread2":14,"_process":52}],46:[function(require,module,exports){
 (function (process){(function (){
 /** @license React v0.20.2
  * scheduler-tracing.development.js
@@ -33386,7 +33524,7 @@ exports.unstable_wrap = unstable_wrap;
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":51}],46:[function(require,module,exports){
+},{"_process":52}],47:[function(require,module,exports){
 /** @license React v0.20.2
  * scheduler-tracing.production.min.js
  *
@@ -33397,7 +33535,7 @@ exports.unstable_wrap = unstable_wrap;
  */
 'use strict';var b=0;exports.__interactionsRef=null;exports.__subscriberRef=null;exports.unstable_clear=function(a){return a()};exports.unstable_getCurrent=function(){return null};exports.unstable_getThreadID=function(){return++b};exports.unstable_subscribe=function(){};exports.unstable_trace=function(a,d,c){return c()};exports.unstable_unsubscribe=function(){};exports.unstable_wrap=function(a){return a};
 
-},{}],47:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 (function (process){(function (){
 /** @license React v0.20.2
  * scheduler.development.js
@@ -34047,7 +34185,7 @@ exports.unstable_wrapCallback = unstable_wrapCallback;
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":51}],48:[function(require,module,exports){
+},{"_process":52}],49:[function(require,module,exports){
 /** @license React v0.20.2
  * scheduler.production.min.js
  *
@@ -34069,7 +34207,7 @@ exports.unstable_next=function(a){switch(P){case 1:case 2:case 3:var b=3;break;d
 exports.unstable_scheduleCallback=function(a,b,c){var d=exports.unstable_now();"object"===typeof c&&null!==c?(c=c.delay,c="number"===typeof c&&0<c?d+c:d):c=d;switch(a){case 1:var e=-1;break;case 2:e=250;break;case 5:e=1073741823;break;case 4:e=1E4;break;default:e=5E3}e=c+e;a={id:N++,callback:b,priorityLevel:a,startTime:c,expirationTime:e,sortIndex:-1};c>d?(a.sortIndex=c,H(M,a),null===J(L)&&a===J(M)&&(S?h():S=!0,g(U,c-d))):(a.sortIndex=e,H(L,a),R||Q||(R=!0,f(V)));return a};
 exports.unstable_wrapCallback=function(a){var b=P;return function(){var c=P;P=b;try{return a.apply(this,arguments)}finally{P=c}}};
 
-},{}],49:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -34080,7 +34218,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/scheduler.development.js":47,"./cjs/scheduler.production.min.js":48,"_process":51}],50:[function(require,module,exports){
+},{"./cjs/scheduler.development.js":48,"./cjs/scheduler.production.min.js":49,"_process":52}],51:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -34091,7 +34229,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/scheduler-tracing.development.js":45,"./cjs/scheduler-tracing.production.min.js":46,"_process":51}],51:[function(require,module,exports){
+},{"./cjs/scheduler-tracing.development.js":46,"./cjs/scheduler-tracing.production.min.js":47,"_process":52}],52:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 

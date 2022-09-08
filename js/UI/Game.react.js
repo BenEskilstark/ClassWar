@@ -5,8 +5,11 @@ const {
   Button, InfoCard, Divider,
   Plot, plotReducer,
 } = require('bens_ui_components');
+const Indicator = require('./Indicator.react');
 const {config} = require('../config');
-const {displayMoney} = require('../utils/display');
+const {
+  displayMoney, displayPercent,
+} = require('../utils/display');
 const {totalPopulation} = require('../selectors/selectors');
 const {initGameOverSystem} = require('../systems/gameOverSystem');
 const {initEventsSystem} = require('../systems/eventsSystem');
@@ -104,17 +107,19 @@ function Info(props): React.Node {
       }}
     >
       <div>
-        Capital: ${game.capital}
+        Capital: {displayMoney(game.capital)} <Indicator value={game.capital} />
       </div>
       <div>
         GDP: ${game.gdp}
       </div>
+      <div>
       <Button
         label={'STEP SIM'}
         onClick={() => {
           dispatch({type: 'TICK'});
         }}
       />
+      </div>
       <Button
         id={game.tickInterval ? '' : 'PLAY'}
         label={game.tickInterval ? 'Pause Simulation' : 'Start Simulation'}
@@ -141,7 +146,7 @@ function Faction(properties): React.Node {
   for (const propName in props) {
     propList.push(
       <div key={'prop_' + name + '_' + propName}>
-        {propName}: {props[propName]}
+        {propName}: {props[propName]} <Indicator value={props[propName]} />
       </div>
     );
   }
@@ -153,11 +158,11 @@ function Faction(properties): React.Node {
       }}
     >
       <div><b>{name}</b></div>
-      <div>Wealth: {displayMoney(wealth)}</div>
-      <div>Tax Rate: {taxRate * 100}%</div>
-      <div>Subsidy: {displayMoney(subsidy)}</div>
-      <div>Population: {population}</div>
-      <div>Favorability: {favorability}</div>
+      <div>Wealth: {displayMoney(wealth)} <Indicator value={wealth} minChange={1}/></div>
+      <div>Tax Rate: {displayPercent(taxRate)} <Indicator value={taxRate} /></div>
+      <div>Subsidy: {displayMoney(subsidy)} <Indicator value={subsidy} minChange={1}/></div>
+      <div>Population: {population} <Indicator value={population} /></div>
+      <div>Favorability: {favorability} <Indicator value={favorability} /></div>
       <Divider />
       {propList}
     </InfoCard>

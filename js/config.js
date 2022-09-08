@@ -1,6 +1,26 @@
 // @flow
 
+const {randomIn, normalIn} = require('bens_utils').stochastic;
+
+// function to potentially initialize with randomized values
+const IS_RANDOMIZED = true;
+
+const val = (base, min, max, isNormal) => {
+  if (!IS_RANDOMIZED) return base;
+  // handle floats between 0 and 1
+  let mult = 1;
+  if ((min > 0 && min < 1) || (max > 0 && max <= 1)) {
+    mult = 100;
+  }
+  if (isNormal) {
+    return normalIn(min * mult, max * mult) / mult;
+  }
+  return randomIn(min * mult, max * mult) / mult;
+};
+
+
 const config = {
+  isRandomized: IS_RANDOMIZED,
   msPerTick: 1000,
   maxTickerLength: 7,
 
@@ -10,41 +30,41 @@ const config = {
     ['Corporations']: {
       name: 'Corporations',
       wealth: 500000,
-      taxRate: 0.2,
-      subsidy: 0,
-      population: 50,
-      favorability: 50,
+      taxRate: val(0.2, 0, 0.5),
+      subsidy: val(0, 0, 50000),
+      population: val(50, 1, 100, true),
+      favorability: val(50, 1, 100, true),
       props: {
-        production: 10, // value multiplier for each corp
+        production: val(10, 1, 50, true), // value multiplier for each corp
       },
     },
 
     ['Middle Class']: {
       name: 'Middle Class',
       wealth: 50000,
-      taxRate: 0.4,
-      subsidy: 0,
-      population: 1000,
-      favorability: 50,
+      taxRate: val(0.4, 0, 0.7),
+      subsidy: val(0, 0, 5000),
+      population: val(1000, 100, 10000),
+      favorability: val(50, 1, 100, true),
       props: {
-        unemployment: 0.1, // rate of not employed
-        wage: 10, // wage going to each employed person
-        skill: 5, // how much more productive than working class each employed person is
-        consumerism: 0.5, // how much wealth goes to buying things
+        unemployment: val(0.1, 0, 0.8), // rate of not employed
+        wage: val(10, 2, 30, true), // wage going to each employed person
+        skill: val(5, 1, 10), // how much more productive than working class each employed person is
+        consumerism: val(0.5, 0.1, 0.99), // how much wealth goes to buying things
       },
     },
 
     ['Working Class']: {
       name: 'Working Class',
-      wealth: 0,
-      taxRate: 0.3,
-      subsidy: 0,
-      population: 10000,
-      favorability: 50,
+      wealth: val(0, 0, 10000),
+      taxRate: val(0.3, 0, 0.7),
+      subsidy: val(0, 0, 5000),
+      population: val(10000, 1000, 50000),
+      favorability: val(50, 1, 100, true),
       props: {
-        unemployment: 0.1, // rate of not employed
-        wage: 3, // wage going to each employed person
-        consumerism: 0.9, // how much wealth goes to buying things
+        unemployment: val(0.1, 0, 0.9), // rate of not employed
+        wage: val(3, 1, 6), // wage going to each employed person
+        consumerism: val(0.9, 0.1, 0.99) // how much wealth goes to buying things
       },
     },
 
@@ -55,6 +75,7 @@ const config = {
     // Landowners -- produce food, charge rent
   },
 };
+
 
 module.exports = {
   config,
