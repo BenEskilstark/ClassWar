@@ -6,6 +6,43 @@ const {clamp, subtractWithDeficit} = require('bens_utils').math;
 
 const gameReducer = (game, action) => {
   switch (action.type) {
+    case 'SET': {
+      const {property, value} = action;
+      game[property] = value;
+      return game;
+    }
+    case 'POLICY_CHANGE': {
+      const {change} = action;
+      const {path, value, operation} = change;
+      let obj = game;
+      for (let i = 0; i < path.length; i++) {
+        const p = path[i];
+        if (p == null) break; // don't apply change if it doesn't have a valid path
+        if (i == path.length - 1) {
+          if (operation == 'append') {
+            obj[p].push(value);
+          } else if (operation == 'multiply') {
+            obj[p] *= value;
+          } else if (operation == 'add') {
+            obj[p] += value;
+          } else {
+            obj[p] = value;
+          }
+        }
+        obj = obj[p];
+      }
+
+      return game;
+    }
+    case 'CHANGE_FAVORABILITY': {
+      const {factions, amount} = action;
+      for (const factionName of factions) {
+        const faction = game.factions[factionName];
+        faction.favorability += amount;
+        faction.favorability = clamp(faction.favorability, 0, 100);
+      }
+      return game;
+    }
     case 'START_TICK': {
       if (game != null && game.tickInterval != null) {
         return game;
@@ -112,13 +149,16 @@ const gameReducer = (game, action) => {
       game.capital += corpTaxesCollected;
       corps.wealth += corpProfit - corpTaxesCollected;
 
-      // compute favorability (gdp change, taxRate, wealth change)
+      // compute favorability (gdp change, taxRate, wealth change, unemployment)
       for (const factionName in game.factions) {
         const faction = game.factions[factionName];
         if (faction.wealth < prevWealth[factionName]) {
           faction.favorability -= 1;
         } else if (faction.wealth - prevWealth[factionName] > prevWealth[factionName] * 0.02) {
           faction.favorability += 1;
+        }
+        if (faction.props.unemployment > 0.1) {
+          faction.favorability -= Math.floor(faction.props.unemployment * 5);
         }
         faction.favorability = clamp(faction.favorability, 0, 100);
       }
@@ -145,45 +185,6 @@ const gameReducer = (game, action) => {
     }
     case 'SET_GAME_OVER': {
       game.gameOver = true;
-      return game;
-    }
-    case 'INCREMENT_WAGES': {
-      const {wageChange} = action;
-      game.wages += wageChange;
-      return game;
-    }
-    case 'INCREMENT_PRICE': {
-      const {name, priceChange} = action;
-      const commodity = getCommodity(game, name);
-      commodity.price += priceChange;
-      if (commodity.price < 0) {
-        commodity.price = 0;
-      }
-
-      commodity.demand = commodity.demandFn(game, commodity.price, totalPopulation(game));
-
-      return game;
-    }
-    case 'INCREMENT_LABOR': {
-      const {name, laborChange} = action;
-      const commodity = getCommodity(game, name);
-      if (laborChange < 0) { // unassigning labor
-        const {amount: laborAmount} =
-          subtractWithDeficit(commodity.laborAssigned, -1 * laborChange);
-        commodity.laborAssigned -= laborAmount;
-        game.labor += laborAmount;
-      } else { // assigning labor
-        const {amount: laborAmount} = subtractWithDeficit(game.labor, laborChange);
-        commodity.laborAssigned += laborAmount;
-        game.labor -= laborAmount;
-      }
-      return game;
-    }
-    case 'UNLOCK_COMMODITY': {
-      const {name} = action;
-      const commodity = getCommodity(game, name);
-      commodity.unlocked = true;
-      commodity.demand = commodity.demandFn(game, commodity.price, totalPopulation(game));
       return game;
     }
   }

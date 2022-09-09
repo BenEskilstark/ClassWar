@@ -76,7 +76,23 @@ const config = {
   },
 };
 
+const policies = [
+  {
+    name: 'Subsidize Corporations',
+    description: 'Business is important to the economy so we need to give all the ' +
+      'support that we can afford!',
+    support: ['Corporations'],
+    oppose: ['Middle Class', 'Working Class'],
+    changes: [{
+      path: ['factions', 'Corporations', 'subsidy'],
+      operation: 'ADD',
+      value: val(5000, 1000, 50000),
+    }],
+  },
+];
+
 
 module.exports = {
   config,
+  policies,
 };

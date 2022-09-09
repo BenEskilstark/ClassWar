@@ -22,8 +22,12 @@
     - how does corp population fit in?
 
 - - - - - - POLICIES - - - - - -
-  - policy UI/implementation
+  - policy system
+    - select a policy every ~5 steps
+    - allow some policies to be picked multiple times and others to only be picked once
   - many policies
+  - policy UI
+    - better lay out of the policy and percents/dollars
 
 
 - - - - - - UI - - - - - -

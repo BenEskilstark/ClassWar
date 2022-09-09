@@ -2,7 +2,7 @@
 
 const {gameReducer} = require('./gameReducer');
 const {modalReducer} = require('./modalReducer');
-const {config} = require('../config');
+const {config, policies} = require('../config');
 const {deepCopy} = require('bens_utils').helpers;
 const {totalPopulation} = require('../selectors/selectors');
 
@@ -32,12 +32,11 @@ const rootReducer = (state: State, action: Action): State => {
     case 'SET_MODAL':
     case 'DISMISS_MODAL':
       return modalReducer(state, action);
-    case 'INCREMENT_PRICE':
-    case 'INCREMENT_LABOR':
-    case 'INCREMENT_WAGES':
     case 'APPEND_TICKER':
-    case 'UNLOCK_COMMODITY':
     case 'SET_GAME_OVER':
+    case 'SET':
+    case 'POLICY_CHANGE':
+    case 'CHANGE_FAVORABILITY':
     case 'START_TICK':
     case 'STOP_TICK':
     case 'TICK': {
@@ -69,6 +68,8 @@ const initGameState = () => {
 
     ticker: ['Welcome to The Command Economy'],
     time: 0,
+
+    policy: policies[0],
   };
 
   for (const factionName in config.factions) {

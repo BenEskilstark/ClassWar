@@ -72,8 +72,21 @@ var config = {
   }), _factions)
 };
 
+var policies = [{
+  name: 'Subsidize Corporations',
+  description: 'Business is important to the economy so we need to give all the ' + 'support that we can afford!',
+  support: ['Corporations'],
+  oppose: ['Middle Class', 'Working Class'],
+  changes: [{
+    path: ['factions', 'Corporations', 'subsidy'],
+    operation: 'ADD',
+    value: val(5000, 1000, 50000)
+  }]
+}];
+
 module.exports = {
-  config: config
+  config: config,
+  policies: policies
 };
 },{"bens_utils":37}],2:[function(require,module,exports){
 'use strict';
@@ -122,6 +135,74 @@ var _require$math = require('bens_utils').math,
 
 var gameReducer = function gameReducer(game, action) {
   switch (action.type) {
+    case 'SET':
+      {
+        var property = action.property,
+            value = action.value;
+
+        game[property] = value;
+        return game;
+      }
+    case 'POLICY_CHANGE':
+      {
+        var change = action.change;
+        var path = change.path,
+            _value = change.value,
+            operation = change.operation;
+
+        var obj = game;
+        for (var i = 0; i < path.length; i++) {
+          var p = path[i];
+          if (p == null) break; // don't apply change if it doesn't have a valid path
+          if (i == path.length - 1) {
+            if (operation == 'append') {
+              obj[p].push(_value);
+            } else if (operation == 'multiply') {
+              obj[p] *= _value;
+            } else if (operation == 'add') {
+              obj[p] += _value;
+            } else {
+              obj[p] = _value;
+            }
+          }
+          obj = obj[p];
+        }
+
+        return game;
+      }
+    case 'CHANGE_FAVORABILITY':
+      {
+        var factions = action.factions,
+            amount = action.amount;
+        var _iteratorNormalCompletion = true;
+        var _didIteratorError = false;
+        var _iteratorError = undefined;
+
+        try {
+          for (var _iterator = factions[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+            var factionName = _step.value;
+
+            var faction = game.factions[factionName];
+            faction.favorability += amount;
+            faction.favorability = clamp(faction.favorability, 0, 100);
+          }
+        } catch (err) {
+          _didIteratorError = true;
+          _iteratorError = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion && _iterator.return) {
+              _iterator.return();
+            }
+          } finally {
+            if (_didIteratorError) {
+              throw _iteratorError;
+            }
+          }
+        }
+
+        return game;
+      }
     case 'START_TICK':
       {
         if (game != null && game.tickInterval != null) {
@@ -149,20 +230,20 @@ var gameReducer = function gameReducer(game, action) {
 
         // subsidies (for every faction)
         var prevWealth = {}; // starting wealth for every faction
-        for (var factionName in game.factions) {
-          var faction = game.factions[factionName];
-          prevWealth[factionName] = faction.wealth;
+        for (var _factionName in game.factions) {
+          var _faction = game.factions[_factionName];
+          prevWealth[_factionName] = _faction.wealth;
 
-          var _subtractWithDeficit = subtractWithDeficit(game.capital, faction.subsidy),
+          var _subtractWithDeficit = subtractWithDeficit(game.capital, _faction.subsidy),
               nextCapital = _subtractWithDeficit.result,
               capitalDeficit = _subtractWithDeficit.deficit,
               subsidyPaid = _subtractWithDeficit.amount;
 
           game.capital = nextCapital;
-          faction.wealth += subsidyPaid;
+          _faction.wealth += subsidyPaid;
           // TODO: compute unfavorability if can't afford subsidy
           if (capitalDeficit != 0) {
-            console.log("gov can't pay subsidy", factionName, capitalDeficit);
+            console.log("gov can't pay subsidy", _factionName, capitalDeficit);
           }
         }
 
@@ -228,15 +309,18 @@ var gameReducer = function gameReducer(game, action) {
         game.capital += corpTaxesCollected;
         corps.wealth += corpProfit - corpTaxesCollected;
 
-        // compute favorability (gdp change, taxRate, wealth change)
-        for (var _factionName in game.factions) {
-          var _faction = game.factions[_factionName];
-          if (_faction.wealth < prevWealth[_factionName]) {
-            _faction.favorability -= 1;
-          } else if (_faction.wealth - prevWealth[_factionName] > prevWealth[_factionName] * 0.02) {
-            _faction.favorability += 1;
+        // compute favorability (gdp change, taxRate, wealth change, unemployment)
+        for (var _factionName2 in game.factions) {
+          var _faction2 = game.factions[_factionName2];
+          if (_faction2.wealth < prevWealth[_factionName2]) {
+            _faction2.favorability -= 1;
+          } else if (_faction2.wealth - prevWealth[_factionName2] > prevWealth[_factionName2] * 0.02) {
+            _faction2.favorability += 1;
           }
-          _faction.favorability = clamp(_faction.favorability, 0, 100);
+          if (_faction2.props.unemployment > 0.1) {
+            _faction2.favorability -= Math.floor(_faction2.props.unemployment * 5);
+          }
+          _faction2.favorability = clamp(_faction2.favorability, 0, 100);
         }
 
         // middle/lower class
@@ -264,60 +348,6 @@ var gameReducer = function gameReducer(game, action) {
     case 'SET_GAME_OVER':
       {
         game.gameOver = true;
-        return game;
-      }
-    case 'INCREMENT_WAGES':
-      {
-        var wageChange = action.wageChange;
-
-        game.wages += wageChange;
-        return game;
-      }
-    case 'INCREMENT_PRICE':
-      {
-        var name = action.name,
-            priceChange = action.priceChange;
-
-        var commodity = getCommodity(game, name);
-        commodity.price += priceChange;
-        if (commodity.price < 0) {
-          commodity.price = 0;
-        }
-
-        commodity.demand = commodity.demandFn(game, commodity.price, totalPopulation(game));
-
-        return game;
-      }
-    case 'INCREMENT_LABOR':
-      {
-        var _name = action.name,
-            laborChange = action.laborChange;
-
-        var _commodity = getCommodity(game, _name);
-        if (laborChange < 0) {
-          // unassigning labor
-          var _subtractWithDeficit4 = subtractWithDeficit(_commodity.laborAssigned, -1 * laborChange),
-              laborAmount = _subtractWithDeficit4.amount;
-
-          _commodity.laborAssigned -= laborAmount;
-          game.labor += laborAmount;
-        } else {
-          // assigning labor
-          var _subtractWithDeficit5 = subtractWithDeficit(game.labor, laborChange),
-              _laborAmount = _subtractWithDeficit5.amount;
-
-          _commodity.laborAssigned += _laborAmount;
-          game.labor -= _laborAmount;
-        }
-        return game;
-      }
-    case 'UNLOCK_COMMODITY':
-      {
-        var _name2 = action.name;
-
-        var _commodity2 = getCommodity(game, _name2);
-        _commodity2.unlocked = true;
-        _commodity2.demand = _commodity2.demandFn(game, _commodity2.price, totalPopulation(game));
         return game;
       }
   }
@@ -368,7 +398,8 @@ var _require2 = require('./modalReducer'),
     modalReducer = _require2.modalReducer;
 
 var _require3 = require('../config'),
-    config = _require3.config;
+    config = _require3.config,
+    policies = _require3.policies;
 
 var deepCopy = require('bens_utils').helpers.deepCopy;
 
@@ -402,12 +433,11 @@ var rootReducer = function rootReducer(state, action) {
     case 'SET_MODAL':
     case 'DISMISS_MODAL':
       return modalReducer(state, action);
-    case 'INCREMENT_PRICE':
-    case 'INCREMENT_LABOR':
-    case 'INCREMENT_WAGES':
     case 'APPEND_TICKER':
-    case 'UNLOCK_COMMODITY':
     case 'SET_GAME_OVER':
+    case 'SET':
+    case 'POLICY_CHANGE':
+    case 'CHANGE_FAVORABILITY':
     case 'START_TICK':
     case 'STOP_TICK':
     case 'TICK':
@@ -437,7 +467,9 @@ var initGameState = function initGameState() {
     gdp: 0,
 
     ticker: ['Welcome to The Command Economy'],
-    time: 0
+    time: 0,
+
+    policy: policies[0]
   };
 
   for (var factionName in config.factions) {
@@ -625,7 +657,8 @@ var _require = require('bens_ui_components'),
     InfoCard = _require.InfoCard,
     Divider = _require.Divider,
     Plot = _require.Plot,
-    plotReducer = _require.plotReducer;
+    plotReducer = _require.plotReducer,
+    Modal = _require.Modal;
 
 var Indicator = require('./Indicator.react');
 
@@ -759,7 +792,8 @@ function Info(props) {
       'div',
       null,
       React.createElement(Button, {
-        label: 'STEP SIM',
+        label: 'Step Simulation',
+        disabled: game.policy != null,
         onClick: function onClick() {
           dispatch({ type: 'TICK' });
         }
@@ -768,6 +802,7 @@ function Info(props) {
     React.createElement(Button, {
       id: game.tickInterval ? '' : 'PLAY',
       label: game.tickInterval ? 'Pause Simulation' : 'Start Simulation',
+      disabled: game.policy != null,
       onClick: function onClick() {
         // dispatch({type: 'TICK'});
         if (game.tickInterval) {
@@ -776,8 +811,225 @@ function Info(props) {
           dispatch({ type: 'START_TICK' });
         }
       }
+    }),
+    React.createElement(Button, {
+      label: 'View Policy Proposal',
+      disabled: game.policy == null,
+      onClick: function onClick() {
+        dispatch({
+          type: 'SET_MODAL',
+          modal: React.createElement(Policy, { dispatch: dispatch, policy: game.policy })
+        });
+      }
     })
   );
+}
+
+function Policy(props) {
+  var dispatch = props.dispatch,
+      policy = props.policy;
+
+
+  var prettifiedChanges = [];
+  var _iteratorNormalCompletion = true;
+  var _didIteratorError = false;
+  var _iteratorError = undefined;
+
+  try {
+    for (var _iterator = policy.changes[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var change = _step.value;
+
+      var operation = ' = ';
+      if (change.operation == 'ADD') {
+        operation = ' + ';
+      } else if (change.operation == 'MULTIPLY') {
+        operation = ' x ';
+      }
+      var path = '';
+      var _iteratorNormalCompletion5 = true;
+      var _didIteratorError5 = false;
+      var _iteratorError5 = undefined;
+
+      try {
+        for (var _iterator5 = change.path[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+          var prop = _step5.value;
+
+          if (prop == 'factions') continue;
+          path += prop + ' ';
+        }
+      } catch (err) {
+        _didIteratorError5 = true;
+        _iteratorError5 = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion5 && _iterator5.return) {
+            _iterator5.return();
+          }
+        } finally {
+          if (_didIteratorError5) {
+            throw _iteratorError5;
+          }
+        }
+      }
+
+      prettifiedChanges.push(React.createElement(
+        'div',
+        { key: "change_" + path + operation + change.value },
+        path,
+        operation,
+        change.value
+      ));
+    }
+  } catch (err) {
+    _didIteratorError = true;
+    _iteratorError = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion && _iterator.return) {
+        _iterator.return();
+      }
+    } finally {
+      if (_didIteratorError) {
+        throw _iteratorError;
+      }
+    }
+  }
+
+  var supporters = [];
+  var _iteratorNormalCompletion2 = true;
+  var _didIteratorError2 = false;
+  var _iteratorError2 = undefined;
+
+  try {
+    for (var _iterator2 = policy.support[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+      var supporter = _step2.value;
+
+      supporters.push(React.createElement(
+        'div',
+        { key: "supporter_" + supporter },
+        supporter
+      ));
+    }
+  } catch (err) {
+    _didIteratorError2 = true;
+    _iteratorError2 = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion2 && _iterator2.return) {
+        _iterator2.return();
+      }
+    } finally {
+      if (_didIteratorError2) {
+        throw _iteratorError2;
+      }
+    }
+  }
+
+  var opposition = [];
+  var _iteratorNormalCompletion3 = true;
+  var _didIteratorError3 = false;
+  var _iteratorError3 = undefined;
+
+  try {
+    for (var _iterator3 = policy.oppose[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+      var opposed = _step3.value;
+
+      opposition.push(React.createElement(
+        'div',
+        { key: "opposed_" + opposed },
+        opposed
+      ));
+    }
+  } catch (err) {
+    _didIteratorError3 = true;
+    _iteratorError3 = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion3 && _iterator3.return) {
+        _iterator3.return();
+      }
+    } finally {
+      if (_didIteratorError3) {
+        throw _iteratorError3;
+      }
+    }
+  }
+
+  return React.createElement(Modal, {
+    title: "Proposal: " + policy.name,
+    body: React.createElement(
+      'div',
+      null,
+      policy.description,
+      React.createElement('div', null),
+      React.createElement(Divider, { style: { marginTop: 6, marginBottom: 6 } }),
+      React.createElement(
+        'b',
+        null,
+        'Changes:'
+      ),
+      ' ',
+      prettifiedChanges,
+      React.createElement(Divider, { style: { marginTop: 6, marginBottom: 6 } }),
+      React.createElement(
+        'b',
+        null,
+        'Factions in Favor:'
+      ),
+      ' ',
+      supporters,
+      React.createElement(Divider, { style: { marginTop: 6, marginBottom: 6 } }),
+      React.createElement(
+        'b',
+        null,
+        'Factions Opposed:'
+      ),
+      ' ',
+      opposition,
+      React.createElement(Divider, { style: { marginTop: 6, marginBottom: 6 } })
+    ),
+    buttons: [{ label: 'Hide Proposal', onClick: function onClick() {
+        dispatch({ type: 'DISMISS_MODAL' });
+      } }, { label: 'Accept', onClick: function onClick() {
+        // implement changes
+        var _iteratorNormalCompletion4 = true;
+        var _didIteratorError4 = false;
+        var _iteratorError4 = undefined;
+
+        try {
+          for (var _iterator4 = policy.changes[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+            var change = _step4.value;
+
+            dispatch({ type: 'POLICY_CHANGE', change: change });
+          }
+          // make opposition unhappy
+        } catch (err) {
+          _didIteratorError4 = true;
+          _iteratorError4 = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion4 && _iterator4.return) {
+              _iterator4.return();
+            }
+          } finally {
+            if (_didIteratorError4) {
+              throw _iteratorError4;
+            }
+          }
+        }
+
+        dispatch({ type: 'CHANGE_FAVORABILITY', factions: policy.oppose, amount: -5 });
+        // clear policy
+        dispatch({ type: 'SET', property: 'policy', value: null });
+        dispatch({ type: 'DISMISS_MODAL' });
+      } }, { label: 'Reject', onClick: function onClick() {
+        // make supporters unhappy
+        dispatch({ type: 'CHANGE_FAVORABILITY', factions: policy.support, amount: -5 });
+        // clear policy
+        dispatch({ type: 'SET', property: 'policy', value: null });
+        dispatch({ type: 'DISMISS_MODAL' });
+      } }]
+  });
 }
 
 function Faction(properties) {
