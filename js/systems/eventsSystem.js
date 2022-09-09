@@ -1,6 +1,11 @@
 // @flow
 
 const React = require('react');
+const {
+  oneOf, weightedOneOf, randomIn, normalIn,
+} = require('bens_utils').stochastic;
+const PolicyModal = require('../UI/PolicyModal.react');
+const {policies, config} = require('../config');
 
 const initEventsSystem = (store) => {
   const {dispatch} = store;
@@ -12,6 +17,16 @@ const initEventsSystem = (store) => {
     if (game.time == time) return;
     if (game.time == 0) return;
     time = game.time;
+
+    if (game.time > 0 && game.time % normalIn(3, 8) == 0) {
+      dispatch({type: 'STOP_TICK'});
+      const chosenPolicy = oneOf(policies);
+      dispatch({type: 'SET', property: 'policy', value: chosenPolicy});
+      dispatch({
+        type: 'SET_MODAL',
+        modal: <PolicyModal dispatch={dispatch} policy={chosenPolicy} />,
+      });
+    }
 
     // if (time == 120) {
     //   dispatch({type: 'APPEND_TICKER', message:

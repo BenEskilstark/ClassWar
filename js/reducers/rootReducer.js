@@ -69,7 +69,7 @@ const initGameState = () => {
     ticker: ['Welcome to The Command Economy'],
     time: 0,
 
-    policy: policies[0],
+    policy: null,
   };
 
   for (const factionName in config.factions) {

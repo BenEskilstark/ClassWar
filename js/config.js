@@ -89,6 +89,18 @@ const policies = [
       value: val(5000, 1000, 50000),
     }],
   },
+  {
+    name: 'Lower Corporate Tax Rate',
+    description: 'Business leaders NEED lower taxes in order to keep the economy ' +
+      'going, please lower their taxes',
+    support: ['Corporations'],
+    oppose: ['Middle Class', 'Working Class'],
+    changes: [{
+      path: ['factions', 'Corporations', 'taxRate'],
+      operation: 'MULTIPLY',
+      value: 0.5,
+    }],
+  },
 ];
 
 

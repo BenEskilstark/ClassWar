@@ -1,6 +1,238 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 'use strict';
 
+var React = require('react');
+
+var _require = require('bens_ui_components'),
+    Button = _require.Button,
+    InfoCard = _require.InfoCard,
+    Divider = _require.Divider,
+    Modal = _require.Modal;
+
+var _require2 = require('../config'),
+    config = _require2.config;
+
+var _require3 = require('../utils/display'),
+    displayMoney = _require3.displayMoney,
+    displayPercent = _require3.displayPercent;
+
+var useState = React.useState,
+    useMemo = React.useMemo,
+    useEffect = React.useEffect,
+    useReducer = React.useReducer;
+
+
+function PolicyModal(props) {
+  var dispatch = props.dispatch,
+      policy = props.policy;
+
+
+  var prettifiedChanges = [];
+  var _iteratorNormalCompletion = true;
+  var _didIteratorError = false;
+  var _iteratorError = undefined;
+
+  try {
+    for (var _iterator = policy.changes[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var change = _step.value;
+
+      var operation = ' = ';
+      if (change.operation == 'ADD') {
+        operation = ' + ';
+      } else if (change.operation == 'MULTIPLY') {
+        operation = ' x ';
+      }
+      var path = '';
+      var _iteratorNormalCompletion5 = true;
+      var _didIteratorError5 = false;
+      var _iteratorError5 = undefined;
+
+      try {
+        for (var _iterator5 = change.path[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+          var prop = _step5.value;
+
+          if (prop == 'factions') continue;
+          path += prop + ' ';
+        }
+      } catch (err) {
+        _didIteratorError5 = true;
+        _iteratorError5 = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion5 && _iterator5.return) {
+            _iterator5.return();
+          }
+        } finally {
+          if (_didIteratorError5) {
+            throw _iteratorError5;
+          }
+        }
+      }
+
+      prettifiedChanges.push(React.createElement(
+        'div',
+        { key: "change_" + path + operation + change.value },
+        path,
+        operation,
+        change.value
+      ));
+    }
+  } catch (err) {
+    _didIteratorError = true;
+    _iteratorError = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion && _iterator.return) {
+        _iterator.return();
+      }
+    } finally {
+      if (_didIteratorError) {
+        throw _iteratorError;
+      }
+    }
+  }
+
+  var supporters = [];
+  var _iteratorNormalCompletion2 = true;
+  var _didIteratorError2 = false;
+  var _iteratorError2 = undefined;
+
+  try {
+    for (var _iterator2 = policy.support[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+      var supporter = _step2.value;
+
+      supporters.push(React.createElement(
+        'div',
+        { key: "supporter_" + supporter },
+        supporter
+      ));
+    }
+  } catch (err) {
+    _didIteratorError2 = true;
+    _iteratorError2 = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion2 && _iterator2.return) {
+        _iterator2.return();
+      }
+    } finally {
+      if (_didIteratorError2) {
+        throw _iteratorError2;
+      }
+    }
+  }
+
+  var opposition = [];
+  var _iteratorNormalCompletion3 = true;
+  var _didIteratorError3 = false;
+  var _iteratorError3 = undefined;
+
+  try {
+    for (var _iterator3 = policy.oppose[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+      var opposed = _step3.value;
+
+      opposition.push(React.createElement(
+        'div',
+        { key: "opposed_" + opposed },
+        opposed
+      ));
+    }
+  } catch (err) {
+    _didIteratorError3 = true;
+    _iteratorError3 = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion3 && _iterator3.return) {
+        _iterator3.return();
+      }
+    } finally {
+      if (_didIteratorError3) {
+        throw _iteratorError3;
+      }
+    }
+  }
+
+  return React.createElement(Modal, {
+    title: "Proposal: " + policy.name,
+    body: React.createElement(
+      'div',
+      null,
+      policy.description,
+      React.createElement('div', null),
+      React.createElement(Divider, { style: { marginTop: 6, marginBottom: 6 } }),
+      React.createElement(
+        'b',
+        null,
+        'Changes:'
+      ),
+      ' ',
+      prettifiedChanges,
+      React.createElement(Divider, { style: { marginTop: 6, marginBottom: 6 } }),
+      React.createElement(
+        'b',
+        null,
+        'Factions in Favor:'
+      ),
+      ' ',
+      supporters,
+      React.createElement(Divider, { style: { marginTop: 6, marginBottom: 6 } }),
+      React.createElement(
+        'b',
+        null,
+        'Factions Opposed:'
+      ),
+      ' ',
+      opposition,
+      React.createElement(Divider, { style: { marginTop: 6, marginBottom: 6 } })
+    ),
+    buttons: [{ label: 'Minimize', onClick: function onClick() {
+        dispatch({ type: 'DISMISS_MODAL' });
+      } }, { label: 'Accept', onClick: function onClick() {
+        // implement changes
+        var _iteratorNormalCompletion4 = true;
+        var _didIteratorError4 = false;
+        var _iteratorError4 = undefined;
+
+        try {
+          for (var _iterator4 = policy.changes[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+            var change = _step4.value;
+
+            dispatch({ type: 'POLICY_CHANGE', change: change });
+          }
+          // make opposition unhappy
+        } catch (err) {
+          _didIteratorError4 = true;
+          _iteratorError4 = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion4 && _iterator4.return) {
+              _iterator4.return();
+            }
+          } finally {
+            if (_didIteratorError4) {
+              throw _iteratorError4;
+            }
+          }
+        }
+
+        dispatch({ type: 'CHANGE_FAVORABILITY', factions: policy.oppose, amount: -5 });
+        // clear policy
+        dispatch({ type: 'SET', property: 'policy', value: null });
+        dispatch({ type: 'DISMISS_MODAL' });
+      } }, { label: 'Reject', onClick: function onClick() {
+        // make supporters unhappy
+        dispatch({ type: 'CHANGE_FAVORABILITY', factions: policy.support, amount: -5 });
+        // clear policy
+        dispatch({ type: 'SET', property: 'policy', value: null });
+        dispatch({ type: 'DISMISS_MODAL' });
+      } }]
+  });
+}
+
+module.exports = PolicyModal;
+},{"../config":2,"../utils/display":14,"bens_ui_components":32,"react":46}],2:[function(require,module,exports){
+'use strict';
+
 var _factions;
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
@@ -82,13 +314,23 @@ var policies = [{
     operation: 'ADD',
     value: val(5000, 1000, 50000)
   }]
+}, {
+  name: 'Lower Corporate Tax Rate',
+  description: 'Business leaders NEED lower taxes in order to keep the economy ' + 'going, please lower their taxes',
+  support: ['Corporations'],
+  oppose: ['Middle Class', 'Working Class'],
+  changes: [{
+    path: ['factions', 'Corporations', 'taxRate'],
+    operation: 'MULTIPLY',
+    value: 0.5
+  }]
 }];
 
 module.exports = {
   config: config,
   policies: policies
 };
-},{"bens_utils":37}],2:[function(require,module,exports){
+},{"bens_utils":39}],3:[function(require,module,exports){
 'use strict';
 
 var _require = require('redux'),
@@ -117,7 +359,7 @@ function renderUI(store) {
     modal: state.modal
   }), document.getElementById('container'));
 }
-},{"./reducers/rootReducer":5,"./ui/Main.react":11,"react":44,"react-dom":41,"redux":45}],3:[function(require,module,exports){
+},{"./reducers/rootReducer":6,"./ui/Main.react":12,"react":46,"react-dom":43,"redux":47}],4:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -155,11 +397,11 @@ var gameReducer = function gameReducer(game, action) {
           var p = path[i];
           if (p == null) break; // don't apply change if it doesn't have a valid path
           if (i == path.length - 1) {
-            if (operation == 'append') {
+            if (operation == 'append' || operation == 'APPEND') {
               obj[p].push(_value);
-            } else if (operation == 'multiply') {
+            } else if (operation == 'multiply' || operation == 'MULTIPLY') {
               obj[p] *= _value;
-            } else if (operation == 'add') {
+            } else if (operation == 'add' || operation == 'ADD') {
               obj[p] += _value;
             } else {
               obj[p] = _value;
@@ -362,7 +604,7 @@ function appendTicker(game, message) {
 }
 
 module.exports = { gameReducer: gameReducer };
-},{"../config":1,"../utils/display":12,"bens_utils":37}],4:[function(require,module,exports){
+},{"../config":2,"../utils/display":14,"bens_utils":39}],5:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -386,7 +628,7 @@ var modalReducer = function modalReducer(state, action) {
 };
 
 module.exports = { modalReducer: modalReducer };
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -469,7 +711,7 @@ var initGameState = function initGameState() {
     ticker: ['Welcome to The Command Economy'],
     time: 0,
 
-    policy: policies[0]
+    policy: null
   };
 
   for (var factionName in config.factions) {
@@ -480,14 +722,26 @@ var initGameState = function initGameState() {
 };
 
 module.exports = { rootReducer: rootReducer };
-},{"../config":1,"../selectors/selectors":6,"./gameReducer":3,"./modalReducer":4,"bens_utils":37}],6:[function(require,module,exports){
+},{"../config":2,"../selectors/selectors":7,"./gameReducer":4,"./modalReducer":5,"bens_utils":39}],7:[function(require,module,exports){
 "use strict";
 
 module.exports = {};
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
+
+var _require$stochastic = require('bens_utils').stochastic,
+    oneOf = _require$stochastic.oneOf,
+    weightedOneOf = _require$stochastic.weightedOneOf,
+    randomIn = _require$stochastic.randomIn,
+    normalIn = _require$stochastic.normalIn;
+
+var PolicyModal = require('../UI/PolicyModal.react');
+
+var _require = require('../config'),
+    policies = _require.policies,
+    config = _require.config;
 
 var initEventsSystem = function initEventsSystem(store) {
   var dispatch = store.dispatch;
@@ -501,6 +755,16 @@ var initEventsSystem = function initEventsSystem(store) {
     if (game.time == time) return;
     if (game.time == 0) return;
     time = game.time;
+
+    if (game.time > 0 && game.time % normalIn(3, 8) == 0) {
+      dispatch({ type: 'STOP_TICK' });
+      var chosenPolicy = oneOf(policies);
+      dispatch({ type: 'SET', property: 'policy', value: chosenPolicy });
+      dispatch({
+        type: 'SET_MODAL',
+        modal: React.createElement(PolicyModal, { dispatch: dispatch, policy: chosenPolicy })
+      });
+    }
 
     // if (time == 120) {
     //   dispatch({type: 'APPEND_TICKER', message:
@@ -517,7 +781,7 @@ var initEventsSystem = function initEventsSystem(store) {
 };
 
 module.exports = { initEventsSystem: initEventsSystem };
-},{"react":44}],8:[function(require,module,exports){
+},{"../UI/PolicyModal.react":1,"../config":2,"bens_utils":39,"react":46}],9:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -645,7 +909,7 @@ var handleGameWon = function handleGameWon(store, dispatch, state, reason) {
 };
 
 module.exports = { initGameOverSystem: initGameOverSystem };
-},{"bens_ui_components":30,"react":44}],9:[function(require,module,exports){
+},{"bens_ui_components":32,"react":46}],10:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -660,6 +924,7 @@ var _require = require('bens_ui_components'),
     plotReducer = _require.plotReducer,
     Modal = _require.Modal;
 
+var PolicyModal = require('./PolicyModal.react');
 var Indicator = require('./Indicator.react');
 
 var _require2 = require('../config'),
@@ -669,14 +934,11 @@ var _require3 = require('../utils/display'),
     displayMoney = _require3.displayMoney,
     displayPercent = _require3.displayPercent;
 
-var _require4 = require('../selectors/selectors'),
-    totalPopulation = _require4.totalPopulation;
+var _require4 = require('../systems/gameOverSystem'),
+    initGameOverSystem = _require4.initGameOverSystem;
 
-var _require5 = require('../systems/gameOverSystem'),
-    initGameOverSystem = _require5.initGameOverSystem;
-
-var _require6 = require('../systems/eventsSystem'),
-    initEventsSystem = _require6.initEventsSystem;
+var _require5 = require('../systems/eventsSystem'),
+    initEventsSystem = _require5.initEventsSystem;
 
 var useState = React.useState,
     useMemo = React.useMemo,
@@ -818,218 +1080,11 @@ function Info(props) {
       onClick: function onClick() {
         dispatch({
           type: 'SET_MODAL',
-          modal: React.createElement(Policy, { dispatch: dispatch, policy: game.policy })
+          modal: React.createElement(PolicyModal, { dispatch: dispatch, policy: game.policy })
         });
       }
     })
   );
-}
-
-function Policy(props) {
-  var dispatch = props.dispatch,
-      policy = props.policy;
-
-
-  var prettifiedChanges = [];
-  var _iteratorNormalCompletion = true;
-  var _didIteratorError = false;
-  var _iteratorError = undefined;
-
-  try {
-    for (var _iterator = policy.changes[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-      var change = _step.value;
-
-      var operation = ' = ';
-      if (change.operation == 'ADD') {
-        operation = ' + ';
-      } else if (change.operation == 'MULTIPLY') {
-        operation = ' x ';
-      }
-      var path = '';
-      var _iteratorNormalCompletion5 = true;
-      var _didIteratorError5 = false;
-      var _iteratorError5 = undefined;
-
-      try {
-        for (var _iterator5 = change.path[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-          var prop = _step5.value;
-
-          if (prop == 'factions') continue;
-          path += prop + ' ';
-        }
-      } catch (err) {
-        _didIteratorError5 = true;
-        _iteratorError5 = err;
-      } finally {
-        try {
-          if (!_iteratorNormalCompletion5 && _iterator5.return) {
-            _iterator5.return();
-          }
-        } finally {
-          if (_didIteratorError5) {
-            throw _iteratorError5;
-          }
-        }
-      }
-
-      prettifiedChanges.push(React.createElement(
-        'div',
-        { key: "change_" + path + operation + change.value },
-        path,
-        operation,
-        change.value
-      ));
-    }
-  } catch (err) {
-    _didIteratorError = true;
-    _iteratorError = err;
-  } finally {
-    try {
-      if (!_iteratorNormalCompletion && _iterator.return) {
-        _iterator.return();
-      }
-    } finally {
-      if (_didIteratorError) {
-        throw _iteratorError;
-      }
-    }
-  }
-
-  var supporters = [];
-  var _iteratorNormalCompletion2 = true;
-  var _didIteratorError2 = false;
-  var _iteratorError2 = undefined;
-
-  try {
-    for (var _iterator2 = policy.support[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-      var supporter = _step2.value;
-
-      supporters.push(React.createElement(
-        'div',
-        { key: "supporter_" + supporter },
-        supporter
-      ));
-    }
-  } catch (err) {
-    _didIteratorError2 = true;
-    _iteratorError2 = err;
-  } finally {
-    try {
-      if (!_iteratorNormalCompletion2 && _iterator2.return) {
-        _iterator2.return();
-      }
-    } finally {
-      if (_didIteratorError2) {
-        throw _iteratorError2;
-      }
-    }
-  }
-
-  var opposition = [];
-  var _iteratorNormalCompletion3 = true;
-  var _didIteratorError3 = false;
-  var _iteratorError3 = undefined;
-
-  try {
-    for (var _iterator3 = policy.oppose[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-      var opposed = _step3.value;
-
-      opposition.push(React.createElement(
-        'div',
-        { key: "opposed_" + opposed },
-        opposed
-      ));
-    }
-  } catch (err) {
-    _didIteratorError3 = true;
-    _iteratorError3 = err;
-  } finally {
-    try {
-      if (!_iteratorNormalCompletion3 && _iterator3.return) {
-        _iterator3.return();
-      }
-    } finally {
-      if (_didIteratorError3) {
-        throw _iteratorError3;
-      }
-    }
-  }
-
-  return React.createElement(Modal, {
-    title: "Proposal: " + policy.name,
-    body: React.createElement(
-      'div',
-      null,
-      policy.description,
-      React.createElement('div', null),
-      React.createElement(Divider, { style: { marginTop: 6, marginBottom: 6 } }),
-      React.createElement(
-        'b',
-        null,
-        'Changes:'
-      ),
-      ' ',
-      prettifiedChanges,
-      React.createElement(Divider, { style: { marginTop: 6, marginBottom: 6 } }),
-      React.createElement(
-        'b',
-        null,
-        'Factions in Favor:'
-      ),
-      ' ',
-      supporters,
-      React.createElement(Divider, { style: { marginTop: 6, marginBottom: 6 } }),
-      React.createElement(
-        'b',
-        null,
-        'Factions Opposed:'
-      ),
-      ' ',
-      opposition,
-      React.createElement(Divider, { style: { marginTop: 6, marginBottom: 6 } })
-    ),
-    buttons: [{ label: 'Hide Proposal', onClick: function onClick() {
-        dispatch({ type: 'DISMISS_MODAL' });
-      } }, { label: 'Accept', onClick: function onClick() {
-        // implement changes
-        var _iteratorNormalCompletion4 = true;
-        var _didIteratorError4 = false;
-        var _iteratorError4 = undefined;
-
-        try {
-          for (var _iterator4 = policy.changes[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-            var change = _step4.value;
-
-            dispatch({ type: 'POLICY_CHANGE', change: change });
-          }
-          // make opposition unhappy
-        } catch (err) {
-          _didIteratorError4 = true;
-          _iteratorError4 = err;
-        } finally {
-          try {
-            if (!_iteratorNormalCompletion4 && _iterator4.return) {
-              _iterator4.return();
-            }
-          } finally {
-            if (_didIteratorError4) {
-              throw _iteratorError4;
-            }
-          }
-        }
-
-        dispatch({ type: 'CHANGE_FAVORABILITY', factions: policy.oppose, amount: -5 });
-        // clear policy
-        dispatch({ type: 'SET', property: 'policy', value: null });
-        dispatch({ type: 'DISMISS_MODAL' });
-      } }, { label: 'Reject', onClick: function onClick() {
-        // make supporters unhappy
-        dispatch({ type: 'CHANGE_FAVORABILITY', factions: policy.support, amount: -5 });
-        // clear policy
-        dispatch({ type: 'SET', property: 'policy', value: null });
-        dispatch({ type: 'DISMISS_MODAL' });
-      } }]
-  });
 }
 
 function Faction(properties) {
@@ -1117,7 +1172,7 @@ function Faction(properties) {
 }
 
 module.exports = Game;
-},{"../config":1,"../selectors/selectors":6,"../systems/eventsSystem":7,"../systems/gameOverSystem":8,"../utils/display":12,"./Indicator.react":10,"bens_ui_components":30,"react":44}],10:[function(require,module,exports){
+},{"../config":2,"../systems/eventsSystem":8,"../systems/gameOverSystem":9,"../utils/display":14,"./Indicator.react":11,"./PolicyModal.react":13,"bens_ui_components":32,"react":46}],11:[function(require,module,exports){
 'use strict';
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
@@ -1184,7 +1239,7 @@ var Indicator = function Indicator(props) {
 };
 
 module.exports = Indicator;
-},{"react":44}],11:[function(require,module,exports){
+},{"react":46}],12:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -1259,7 +1314,9 @@ function PlayModal(props) {
 }
 
 module.exports = Main;
-},{"./Game.react":9,"bens_ui_components":30,"react":44}],12:[function(require,module,exports){
+},{"./Game.react":10,"bens_ui_components":32,"react":46}],13:[function(require,module,exports){
+arguments[4][1][0].apply(exports,arguments)
+},{"../config":2,"../utils/display":14,"bens_ui_components":32,"dup":1,"react":46}],14:[function(require,module,exports){
 'use strict';
 
 var displayMoney = function displayMoney(money) {
@@ -1282,7 +1339,7 @@ module.exports = {
   displayMoney: displayMoney,
   displayPercent: displayPercent
 };
-},{}],13:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 function _defineProperty(obj, key, value) {
   if (key in obj) {
     Object.defineProperty(obj, key, {
@@ -1299,7 +1356,7 @@ function _defineProperty(obj, key, value) {
 }
 
 module.exports = _defineProperty, module.exports.__esModule = true, module.exports["default"] = module.exports;
-},{}],14:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 var defineProperty = require("./defineProperty.js");
 
 function ownKeys(object, enumerableOnly) {
@@ -1329,7 +1386,7 @@ function _objectSpread2(target) {
 }
 
 module.exports = _objectSpread2, module.exports.__esModule = true, module.exports["default"] = module.exports;
-},{"./defineProperty.js":13}],15:[function(require,module,exports){
+},{"./defineProperty.js":15}],17:[function(require,module,exports){
 'use strict';
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
@@ -1423,7 +1480,7 @@ var AudioWidget = function AudioWidget(props) {
 };
 
 module.exports = AudioWidget;
-},{"./Button.react":16,"react":44}],16:[function(require,module,exports){
+},{"./Button.react":18,"react":46}],18:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -1510,7 +1567,7 @@ function Button(props) {
 }
 
 module.exports = Button;
-},{"react":44}],17:[function(require,module,exports){
+},{"react":46}],19:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -1650,7 +1707,7 @@ function withPropsChecker(WrappedComponent) {
 }
 
 module.exports = React.memo(Canvas);
-},{"react":44}],18:[function(require,module,exports){
+},{"react":46}],20:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -1690,7 +1747,7 @@ function Checkbox(props) {
 }
 
 module.exports = Checkbox;
-},{"react":44}],19:[function(require,module,exports){
+},{"react":46}],21:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -1710,7 +1767,7 @@ function Divider(props) {
 }
 
 module.exports = Divider;
-},{"react":44}],20:[function(require,module,exports){
+},{"react":46}],22:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -1751,7 +1808,7 @@ var Dropdown = function Dropdown(props) {
 };
 
 module.exports = Dropdown;
-},{"react":44}],21:[function(require,module,exports){
+},{"react":46}],23:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -1782,7 +1839,7 @@ var InfoCard = function InfoCard(props) {
 };
 
 module.exports = InfoCard;
-},{"react":44}],22:[function(require,module,exports){
+},{"react":46}],24:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -1866,7 +1923,7 @@ function Modal(props) {
 }
 
 module.exports = Modal;
-},{"./Button.react":16,"bens_utils":37,"react":44}],23:[function(require,module,exports){
+},{"./Button.react":18,"bens_utils":39,"react":46}],25:[function(require,module,exports){
 'use strict';
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
@@ -1956,7 +2013,7 @@ var submitValue = function submitValue(onChange, nextVal, onlyInt) {
 };
 
 module.exports = NumberField;
-},{"react":44}],24:[function(require,module,exports){
+},{"react":46}],26:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -2323,7 +2380,7 @@ var PlotWatcher = function PlotWatcher(props) {
 };
 
 module.exports = PlotWatcher;
-},{"./Button.react":16,"./Canvas.react":17,"react":44}],25:[function(require,module,exports){
+},{"./Button.react":18,"./Canvas.react":19,"react":46}],27:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -2407,7 +2464,7 @@ var quitGameModal = function quitGameModal(dispatch) {
 };
 
 module.exports = QuitButton;
-},{"./Button.react":16,"./Modal.react":22,"bens_utils":37,"react":44}],26:[function(require,module,exports){
+},{"./Button.react":18,"./Modal.react":24,"bens_utils":39,"react":46}],28:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -2496,7 +2553,7 @@ var RadioPicker = function (_React$Component) {
 }(React.Component);
 
 module.exports = RadioPicker;
-},{"react":44}],27:[function(require,module,exports){
+},{"react":46}],29:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -2566,7 +2623,7 @@ function Slider(props) {
 }
 
 module.exports = Slider;
-},{"./NumberField.react":23,"react":44}],28:[function(require,module,exports){
+},{"./NumberField.react":25,"react":46}],30:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -2873,7 +2930,7 @@ function Table(props) {
 }
 
 module.exports = Table;
-},{"./Button.react":16,"./Dropdown.react":20,"react":44}],29:[function(require,module,exports){
+},{"./Button.react":18,"./Dropdown.react":22,"react":46}],31:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -2962,7 +3019,7 @@ var plotReducer = function plotReducer(state, action) {
 };
 
 module.exports = { plotReducer: plotReducer };
-},{}],30:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 
 module.exports = {
   AudioWidget: require('./bin/AudioWidget.react.js'),
@@ -2982,7 +3039,7 @@ module.exports = {
   Table: require('./bin/Table.react.js'),
 };
 
-},{"./bin/AudioWidget.react.js":15,"./bin/Button.react.js":16,"./bin/Canvas.react.js":17,"./bin/Checkbox.react.js":18,"./bin/Divider.react.js":19,"./bin/Dropdown.react.js":20,"./bin/InfoCard.react.js":21,"./bin/Modal.react.js":22,"./bin/NumberField.react.js":23,"./bin/Plot.react.js":24,"./bin/QuitButton.react.js":25,"./bin/RadioPicker.react.js":26,"./bin/Slider.react.js":27,"./bin/Table.react.js":28,"./bin/plotReducer.js":29}],31:[function(require,module,exports){
+},{"./bin/AudioWidget.react.js":17,"./bin/Button.react.js":18,"./bin/Canvas.react.js":19,"./bin/Checkbox.react.js":20,"./bin/Divider.react.js":21,"./bin/Dropdown.react.js":22,"./bin/InfoCard.react.js":23,"./bin/Modal.react.js":24,"./bin/NumberField.react.js":25,"./bin/Plot.react.js":26,"./bin/QuitButton.react.js":27,"./bin/RadioPicker.react.js":28,"./bin/Slider.react.js":29,"./bin/Table.react.js":30,"./bin/plotReducer.js":31}],33:[function(require,module,exports){
 'use strict';
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
@@ -3146,7 +3203,7 @@ module.exports = {
   getEntityPositions: getEntityPositions,
   entityInsideGrid: entityInsideGrid
 };
-},{"./helpers":32,"./math":33,"./vectors":36}],32:[function(require,module,exports){
+},{"./helpers":34,"./math":35,"./vectors":38}],34:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -3293,7 +3350,7 @@ module.exports = {
   deepCopy: deepCopy,
   throttle: throttle
 };
-},{"./vectors":36}],33:[function(require,module,exports){
+},{"./vectors":38}],35:[function(require,module,exports){
 "use strict";
 
 var clamp = function clamp(val, min, max) {
@@ -3338,7 +3395,7 @@ module.exports = {
   clamp: clamp,
   subtractWithDeficit: subtractWithDeficit
 };
-},{}],34:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 'use strict';
 
 function isIpad() {
@@ -3364,7 +3421,7 @@ module.exports = {
   isIpad: isIpad,
   isMobile: isMobile
 };
-},{}],35:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 "use strict";
 
 var floor = Math.floor,
@@ -3419,7 +3476,7 @@ module.exports = {
   oneOf: oneOf,
   weightedOneOf: weightedOneOf
 };
-},{}],36:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 "use strict";
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -3618,7 +3675,7 @@ module.exports = {
   rotate: rotate,
   abs: abs
 };
-},{}],37:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 
 module.exports = {
   vectors: require('./bin/vectors'),
@@ -3629,7 +3686,7 @@ module.exports = {
   math: require('./bin/math'),
 }
 
-},{"./bin/gridHelpers":31,"./bin/helpers":32,"./bin/math":33,"./bin/platform":34,"./bin/stochastic":35,"./bin/vectors":36}],38:[function(require,module,exports){
+},{"./bin/gridHelpers":33,"./bin/helpers":34,"./bin/math":35,"./bin/platform":36,"./bin/stochastic":37,"./bin/vectors":38}],40:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -3721,7 +3778,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],39:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 (function (process){(function (){
 /** @license React v17.0.2
  * react-dom.development.js
@@ -29987,7 +30044,7 @@ exports.version = ReactVersion;
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":52,"object-assign":38,"react":44,"scheduler":50,"scheduler/tracing":51}],40:[function(require,module,exports){
+},{"_process":54,"object-assign":40,"react":46,"scheduler":52,"scheduler/tracing":53}],42:[function(require,module,exports){
 /** @license React v17.0.2
  * react-dom.production.min.js
  *
@@ -30286,7 +30343,7 @@ exports.findDOMNode=function(a){if(null==a)return null;if(1===a.nodeType)return 
 exports.render=function(a,b,c){if(!rk(b))throw Error(y(200));return tk(null,a,b,!1,c)};exports.unmountComponentAtNode=function(a){if(!rk(a))throw Error(y(40));return a._reactRootContainer?(Xj(function(){tk(null,null,a,!1,function(){a._reactRootContainer=null;a[ff]=null})}),!0):!1};exports.unstable_batchedUpdates=Wj;exports.unstable_createPortal=function(a,b){return uk(a,b,2<arguments.length&&void 0!==arguments[2]?arguments[2]:null)};
 exports.unstable_renderSubtreeIntoContainer=function(a,b,c,d){if(!rk(c))throw Error(y(200));if(null==a||void 0===a._reactInternals)throw Error(y(38));return tk(a,b,c,!1,d)};exports.version="17.0.2";
 
-},{"object-assign":38,"react":44,"scheduler":50}],41:[function(require,module,exports){
+},{"object-assign":40,"react":46,"scheduler":52}],43:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -30328,7 +30385,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react-dom.development.js":39,"./cjs/react-dom.production.min.js":40,"_process":52}],42:[function(require,module,exports){
+},{"./cjs/react-dom.development.js":41,"./cjs/react-dom.production.min.js":42,"_process":54}],44:[function(require,module,exports){
 (function (process){(function (){
 /** @license React v17.0.2
  * react.development.js
@@ -32665,7 +32722,7 @@ exports.version = ReactVersion;
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":52,"object-assign":38}],43:[function(require,module,exports){
+},{"_process":54,"object-assign":40}],45:[function(require,module,exports){
 /** @license React v17.0.2
  * react.production.min.js
  *
@@ -32690,7 +32747,7 @@ key:d,ref:k,props:e,_owner:h}};exports.createContext=function(a,b){void 0===b&&(
 exports.lazy=function(a){return{$$typeof:v,_payload:{_status:-1,_result:a},_init:Q}};exports.memo=function(a,b){return{$$typeof:u,type:a,compare:void 0===b?null:b}};exports.useCallback=function(a,b){return S().useCallback(a,b)};exports.useContext=function(a,b){return S().useContext(a,b)};exports.useDebugValue=function(){};exports.useEffect=function(a,b){return S().useEffect(a,b)};exports.useImperativeHandle=function(a,b,c){return S().useImperativeHandle(a,b,c)};
 exports.useLayoutEffect=function(a,b){return S().useLayoutEffect(a,b)};exports.useMemo=function(a,b){return S().useMemo(a,b)};exports.useReducer=function(a,b,c){return S().useReducer(a,b,c)};exports.useRef=function(a){return S().useRef(a)};exports.useState=function(a){return S().useState(a)};exports.version="17.0.2";
 
-},{"object-assign":38}],44:[function(require,module,exports){
+},{"object-assign":40}],46:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -32701,7 +32758,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react.development.js":42,"./cjs/react.production.min.js":43,"_process":52}],45:[function(require,module,exports){
+},{"./cjs/react.development.js":44,"./cjs/react.production.min.js":45,"_process":54}],47:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -33402,7 +33459,7 @@ exports.compose = compose;
 exports.createStore = createStore;
 
 }).call(this)}).call(this,require('_process'))
-},{"@babel/runtime/helpers/objectSpread2":14,"_process":52}],46:[function(require,module,exports){
+},{"@babel/runtime/helpers/objectSpread2":16,"_process":54}],48:[function(require,module,exports){
 (function (process){(function (){
 /** @license React v0.20.2
  * scheduler-tracing.development.js
@@ -33753,7 +33810,7 @@ exports.unstable_wrap = unstable_wrap;
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":52}],47:[function(require,module,exports){
+},{"_process":54}],49:[function(require,module,exports){
 /** @license React v0.20.2
  * scheduler-tracing.production.min.js
  *
@@ -33764,7 +33821,7 @@ exports.unstable_wrap = unstable_wrap;
  */
 'use strict';var b=0;exports.__interactionsRef=null;exports.__subscriberRef=null;exports.unstable_clear=function(a){return a()};exports.unstable_getCurrent=function(){return null};exports.unstable_getThreadID=function(){return++b};exports.unstable_subscribe=function(){};exports.unstable_trace=function(a,d,c){return c()};exports.unstable_unsubscribe=function(){};exports.unstable_wrap=function(a){return a};
 
-},{}],48:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 (function (process){(function (){
 /** @license React v0.20.2
  * scheduler.development.js
@@ -34414,7 +34471,7 @@ exports.unstable_wrapCallback = unstable_wrapCallback;
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":52}],49:[function(require,module,exports){
+},{"_process":54}],51:[function(require,module,exports){
 /** @license React v0.20.2
  * scheduler.production.min.js
  *
@@ -34436,7 +34493,7 @@ exports.unstable_next=function(a){switch(P){case 1:case 2:case 3:var b=3;break;d
 exports.unstable_scheduleCallback=function(a,b,c){var d=exports.unstable_now();"object"===typeof c&&null!==c?(c=c.delay,c="number"===typeof c&&0<c?d+c:d):c=d;switch(a){case 1:var e=-1;break;case 2:e=250;break;case 5:e=1073741823;break;case 4:e=1E4;break;default:e=5E3}e=c+e;a={id:N++,callback:b,priorityLevel:a,startTime:c,expirationTime:e,sortIndex:-1};c>d?(a.sortIndex=c,H(M,a),null===J(L)&&a===J(M)&&(S?h():S=!0,g(U,c-d))):(a.sortIndex=e,H(L,a),R||Q||(R=!0,f(V)));return a};
 exports.unstable_wrapCallback=function(a){var b=P;return function(){var c=P;P=b;try{return a.apply(this,arguments)}finally{P=c}}};
 
-},{}],50:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -34447,7 +34504,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/scheduler.development.js":48,"./cjs/scheduler.production.min.js":49,"_process":52}],51:[function(require,module,exports){
+},{"./cjs/scheduler.development.js":50,"./cjs/scheduler.production.min.js":51,"_process":54}],53:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -34458,7 +34515,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/scheduler-tracing.development.js":46,"./cjs/scheduler-tracing.production.min.js":47,"_process":52}],52:[function(require,module,exports){
+},{"./cjs/scheduler-tracing.development.js":48,"./cjs/scheduler-tracing.production.min.js":49,"_process":54}],54:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -34644,4 +34701,4 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}]},{},[2]);
+},{}]},{},[3]);

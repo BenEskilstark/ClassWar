@@ -11,6 +11,8 @@
       - middle class -> greater skill
       - corps -> greater production
   - add in additional factions
+    - landowners, intelligentsia, army
+    - maybe they appear later?
   - construction:
     - productivity is just a wealth transfer to the government...
     - how to compute GDP
@@ -23,8 +25,10 @@
 
 - - - - - - POLICIES - - - - - -
   - policy system
-    - select a policy every ~5 steps
     - allow some policies to be picked multiple times and others to only be picked once
+    - add weights to policies to make them more likely to be selected based on sim state
+    - maybe have a hard-coded smaller set of policies to choose from at first
+    - procedurally generate policies?
   - many policies
   - policy UI
     - better lay out of the policy and percents/dollars

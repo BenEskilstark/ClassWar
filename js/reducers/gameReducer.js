@@ -19,11 +19,11 @@ const gameReducer = (game, action) => {
         const p = path[i];
         if (p == null) break; // don't apply change if it doesn't have a valid path
         if (i == path.length - 1) {
-          if (operation == 'append') {
+          if (operation == 'append' || operation == 'APPEND') {
             obj[p].push(value);
-          } else if (operation == 'multiply') {
+          } else if (operation == 'multiply' || operation == 'MULTIPLY') {
             obj[p] *= value;
-          } else if (operation == 'add') {
+          } else if (operation == 'add' || operation == 'ADD') {
             obj[p] += value;
           } else {
             obj[p] = value;
