@@ -1,12 +1,23 @@
 
 - - - - - SIMULATION - - - - - -
   - favorability changes
-    - put in ticker
-  - how to compute GDP
-    - exports/imports? what is the point?
+    - put in ticker for big changes (ie can't afford)
+    - consequences of unfavorability per faction
+      - poor -> strikes, then revolution
+      - middle class -> strikes
+      - corps -> reducing production, then leaving
+    - bonuses for high favorability ?
+      - poor -> ?
+      - middle class -> greater skill
+      - corps -> greater production
   - add in additional factions
   - construction:
     - productivity is just a wealth transfer to the government...
+    - how to compute GDP
+      - exports/imports? what is the point?
+      - separate consumerism into demand + prices
+        where prices are a function of production/gdp and demand
+        is a function of consumerism + prices
     - unemployed could be a function of wages/wealth of corps
     - how does corp population fit in?
 

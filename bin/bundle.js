@@ -62,7 +62,7 @@ var config = {
     wealth: val(0, 0, 10000),
     taxRate: val(0.3, 0, 0.7),
     subsidy: val(0, 0, 5000),
-    population: val(10000, 1000, 100000),
+    population: val(10000, 1000, 50000),
     favorability: val(50, 1, 100, true),
     props: {
       unemployment: val(0.1, 0, 0.9), // rate of not employed
@@ -116,8 +116,9 @@ var _require2 = require('../utils/display'),
     displayMoney = _require2.displayMoney,
     displayPercent = _require2.displayPercent;
 
-var _require3 = require('../selectors/selectors'),
-    subtractWithDeficit = _require3.subtractWithDeficit;
+var _require$math = require('bens_utils').math,
+    clamp = _require$math.clamp,
+    subtractWithDeficit = _require$math.subtractWithDeficit;
 
 var gameReducer = function gameReducer(game, action) {
   switch (action.type) {
@@ -147,8 +148,10 @@ var gameReducer = function gameReducer(game, action) {
         game.time += 1;
 
         // subsidies (for every faction)
+        var prevWealth = {}; // starting wealth for every faction
         for (var factionName in game.factions) {
           var faction = game.factions[factionName];
+          prevWealth[factionName] = faction.wealth;
 
           var _subtractWithDeficit = subtractWithDeficit(game.capital, faction.subsidy),
               nextCapital = _subtractWithDeficit.result,
@@ -210,7 +213,7 @@ var gameReducer = function gameReducer(game, action) {
           console.log("corps can't pay poors", corpWealthDeficit2);
         }
 
-        // compute production of goods
+        // compute production of goods (and gdp?)
         var totalGoods = 0;
         totalGoods += midsActuallyPaid * mids.props.skill * corps.props.production;
         totalGoods += poorsActuallyPaid * corps.props.production;
@@ -225,8 +228,16 @@ var gameReducer = function gameReducer(game, action) {
         game.capital += corpTaxesCollected;
         corps.wealth += corpProfit - corpTaxesCollected;
 
-        // compute gdp
-        // compute favorability (gdp change, taxRate, wealth)
+        // compute favorability (gdp change, taxRate, wealth change)
+        for (var _factionName in game.factions) {
+          var _faction = game.factions[_factionName];
+          if (_faction.wealth < prevWealth[_factionName]) {
+            _faction.favorability -= 1;
+          } else if (_faction.wealth - prevWealth[_factionName] > prevWealth[_factionName] * 0.02) {
+            _faction.favorability += 1;
+          }
+          _faction.favorability = clamp(_faction.favorability, 0, 100);
+        }
 
         // middle/lower class
         // compute favorability (unemployment, wealth, taxRate)
@@ -321,7 +332,7 @@ function appendTicker(game, message) {
 }
 
 module.exports = { gameReducer: gameReducer };
-},{"../config":1,"../selectors/selectors":6,"../utils/display":12}],4:[function(require,module,exports){
+},{"../config":1,"../utils/display":12,"bens_utils":37}],4:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -440,41 +451,7 @@ module.exports = { rootReducer: rootReducer };
 },{"../config":1,"../selectors/selectors":6,"./gameReducer":3,"./modalReducer":4,"bens_utils":37}],6:[function(require,module,exports){
 "use strict";
 
-// when you want to do A - B, but A must always be >= 0, and you need
-// to do something different if B > A, then use this function.
-// Returns a {result, deficit, amount} tuple where
-// - result is the new value of A after the subtraction, but always >= 0
-// - deficit is the leftover value if B > A
-// - amount is how much of operandB successfully subtracted
-//    (will either equal operandB if deficit = 0 or operandA otherwise,
-//    unless a step parameter is provided)
-//
-// Use the optional step parameter to ensure a minimum leftover
-// amount that won't be subtracted if B > A. (ie if A is $27 and
-// B is 3 * $10 of items, then step would be 10 and so
-// {result: 7, deficit: 3, amount: 20} instead of
-// {result: 0, deficit: 3, amount: 27})
-var subtractWithDeficit = function subtractWithDeficit(operandA, operandB, step) {
-  step = step != null ? step : 1;
-  var result = operandA - operandB;
-  var amount = operandB;
-  var deficit = 0;
-  if (result < 0) {
-    // for reference, results without step:
-    // deficit = -1 * result;
-    // amount = operandA;
-    // result = 0;
-
-    deficit = -1 * result;
-    amount = Math.floor(operandA / step) * step;
-    result = operandA % step;
-  }
-  return { result: result, deficit: deficit, amount: amount };
-};
-
-module.exports = {
-  subtractWithDeficit: subtractWithDeficit
-};
+module.exports = {};
 },{}],7:[function(require,module,exports){
 'use strict';
 
@@ -878,7 +855,7 @@ function Faction(properties) {
       'div',
       null,
       'Favorability: ',
-      favorability,
+      displayPercent(favorability / 100),
       ' ',
       React.createElement(Indicator, { value: favorability })
     ),

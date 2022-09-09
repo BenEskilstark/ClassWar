@@ -2,9 +2,7 @@
 
 const {config} = require('../config');
 const {displayMoney, displayPercent} = require('../utils/display');
-const {
-  subtractWithDeficit,
-} = require('../selectors/selectors');
+const {clamp, subtractWithDeficit} = require('bens_utils').math;
 
 const gameReducer = (game, action) => {
   switch (action.type) {
@@ -32,8 +30,10 @@ const gameReducer = (game, action) => {
       game.time += 1;
 
       // subsidies (for every faction)
+      let prevWealth = {}; // starting wealth for every faction
       for (const factionName in game.factions) {
         const faction = game.factions[factionName];
+        prevWealth[factionName] = faction.wealth;
         const {
           result: nextCapital,
           deficit: capitalDeficit,
@@ -97,7 +97,7 @@ const gameReducer = (game, action) => {
         console.log("corps can't pay poors", corpWealthDeficit2);
       }
 
-      // compute production of goods
+      // compute production of goods (and gdp?)
       let totalGoods = 0;
       totalGoods += midsActuallyPaid * mids.props.skill * corps.props.production;
       totalGoods += poorsActuallyPaid * corps.props.production;
@@ -112,8 +112,16 @@ const gameReducer = (game, action) => {
       game.capital += corpTaxesCollected;
       corps.wealth += corpProfit - corpTaxesCollected;
 
-      // compute gdp
-      // compute favorability (gdp change, taxRate, wealth)
+      // compute favorability (gdp change, taxRate, wealth change)
+      for (const factionName in game.factions) {
+        const faction = game.factions[factionName];
+        if (faction.wealth < prevWealth[factionName]) {
+          faction.favorability -= 1;
+        } else if (faction.wealth - prevWealth[factionName] > prevWealth[factionName] * 0.02) {
+          faction.favorability += 1;
+        }
+        faction.favorability = clamp(faction.favorability, 0, 100);
+      }
 
       // middle/lower class
       // compute favorability (unemployment, wealth, taxRate)

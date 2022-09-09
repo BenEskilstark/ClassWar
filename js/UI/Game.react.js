@@ -162,7 +162,7 @@ function Faction(properties): React.Node {
       <div>Tax Rate: {displayPercent(taxRate)} <Indicator value={taxRate} /></div>
       <div>Subsidy: {displayMoney(subsidy)} <Indicator value={subsidy} minChange={1}/></div>
       <div>Population: {population} <Indicator value={population} /></div>
-      <div>Favorability: {favorability} <Indicator value={favorability} /></div>
+      <div>Favorability: {displayPercent(favorability / 100)} <Indicator value={favorability} /></div>
       <Divider />
       {propList}
     </InfoCard>
