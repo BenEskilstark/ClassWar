@@ -199,7 +199,7 @@ function PolicyModal(props) {
 
             dispatch({ type: 'POLICY_CHANGE', change: change });
           }
-          // make opposition unhappy
+          // make supporters happy
         } catch (err) {
           _didIteratorError4 = true;
           _iteratorError4 = err;
@@ -215,11 +215,15 @@ function PolicyModal(props) {
           }
         }
 
+        dispatch({ type: 'CHANGE_FAVORABILITY', factions: policy.support, amount: 5 });
+        // make opposition unhappy
         dispatch({ type: 'CHANGE_FAVORABILITY', factions: policy.oppose, amount: -5 });
         // clear policy
         dispatch({ type: 'SET', property: 'policy', value: null });
         dispatch({ type: 'DISMISS_MODAL' });
       } }, { label: 'Reject', onClick: function onClick() {
+        // make opposition happy
+        dispatch({ type: 'CHANGE_FAVORABILITY', factions: policy.oppose, amount: 5 });
         // make supporters unhappy
         dispatch({ type: 'CHANGE_FAVORABILITY', factions: policy.support, amount: -5 });
         // clear policy
@@ -266,9 +270,12 @@ var config = {
 
   capital: 1000000,
 
+  subsidyDeficitMult: 5,
+  wagesDeficitMult: 5,
+
   factions: (_factions = {}, _defineProperty(_factions, 'Corporations', {
     name: 'Corporations',
-    wealth: 500000,
+    wealth: 100000,
     taxRate: val(0.2, 0, 0.5),
     subsidy: val(0, 0, 50000),
     population: val(50, 1, 100, true),
@@ -313,7 +320,9 @@ var policies = [{
     path: ['factions', 'Corporations', 'subsidy'],
     operation: 'ADD',
     value: val(5000, 1000, 50000)
-  }]
+  }],
+  useOnce: false,
+  getWeight: function getWeight(game) {}
 }, {
   name: 'Lower Corporate Tax Rate',
   description: 'Business leaders NEED lower taxes in order to keep the economy ' + 'going, please lower their taxes',
@@ -374,6 +383,12 @@ var _require2 = require('../utils/display'),
 var _require$math = require('bens_utils').math,
     clamp = _require$math.clamp,
     subtractWithDeficit = _require$math.subtractWithDeficit;
+
+var _require$stochastic = require('bens_utils').stochastic,
+    randomIn = _require$stochastic.randomIn,
+    normalIn = _require$stochastic.normalIn,
+    oneOf = _require$stochastic.oneOf,
+    weightedOneOf = _require$stochastic.weightedOneOf;
 
 var gameReducer = function gameReducer(game, action) {
   switch (action.type) {
@@ -469,6 +484,10 @@ var gameReducer = function gameReducer(game, action) {
     case 'TICK':
       {
         game.time += 1;
+        game.ticksToNextPolicy--;
+        if (game.ticksToNextPolicy == -1) {
+          game.ticksToNextPolicy = normalIn(4, 8);
+        }
 
         // subsidies (for every faction)
         var prevWealth = {}; // starting wealth for every faction
@@ -483,9 +502,12 @@ var gameReducer = function gameReducer(game, action) {
 
           game.capital = nextCapital;
           _faction.wealth += subsidyPaid;
-          // TODO: compute unfavorability if can't afford subsidy
+          // compute unfavorability if can't afford subsidy
           if (capitalDeficit != 0) {
-            console.log("gov can't pay subsidy", _factionName, capitalDeficit);
+            appendTicker(game, 'Government is ' + displayMoney(capitalDeficit) + ' short of subsidy for ' + _factionName);
+            var favorabilityPenalty = Math.ceil(capitalDeficit / _faction.subsidy * config.subsidyDeficitMult);
+            appendTicker(game, 'This is reducing their favorability for the government by ' + displayPercent(favorabilityPenalty / 100));
+            _faction.favorability = clamp(_faction.favorability - favorabilityPenalty, 0, 100);
           }
         }
 
@@ -511,9 +533,11 @@ var gameReducer = function gameReducer(game, action) {
         game.capital += midsTaxesCollected;
         mids.wealth += midsWagesPaid - midsTaxesCollected;
         corps.wealth = nextCorpWealth;
-        // TODO: compute unfavorability/unemployement if corp can't pay
+        // compute unemployement if corp can't pay
         if (corpWealthDeficit != 0) {
-          console.log("corps can't pay mids", corpWealthDeficit);
+          appendTicker(game, 'Corporations are ' + displayMoney(corpWealthDeficit) + ' short of wages for Middle Class');
+          appendTicker(game, 'They\'ll have to fire everyone they can\'t afford to pay');
+          mids.props.unemployment += corpWealthDeficit / mids.props.wage / mids.population;
         }
 
         // compute payment to working class (with tax)
@@ -531,9 +555,11 @@ var gameReducer = function gameReducer(game, action) {
         game.capital += poorsTaxesCollected;
         poors.wealth += poorsWagesPaid - poorsTaxesCollected;
         corps.wealth = nextCorpWealth2;
-        // TODO: compute unfavorability/unemployement if corp can't pay
+        // compute unfavorability/unemployement if corp can't pay
         if (corpWealthDeficit2 != 0) {
-          console.log("corps can't pay poors", corpWealthDeficit2);
+          appendTicker(game, 'Corporations are ' + displayMoney(corpWealthDeficit2) + ' short of wages for Working Class');
+          appendTicker(game, 'They\'ll have to fire everyone they can\'t afford to pay');
+          poors.props.unemployment += corpWealthDeficit2 / poors.props.wage / poors.population;
         }
 
         // compute production of goods (and gdp?)
@@ -709,6 +735,7 @@ var initGameState = function initGameState() {
     gdp: 0,
 
     ticker: ['Welcome to The Command Economy'],
+    ticksToNextPolicy: 5,
     time: 0,
 
     policy: null
@@ -756,7 +783,7 @@ var initEventsSystem = function initEventsSystem(store) {
     if (game.time == 0) return;
     time = game.time;
 
-    if (game.time > 0 && game.time % normalIn(3, 8) == 0) {
+    if (game.ticksToNextPolicy == 0) {
       dispatch({ type: 'STOP_TICK' });
       var chosenPolicy = oneOf(policies);
       dispatch({ type: 'SET', property: 'policy', value: chosenPolicy });

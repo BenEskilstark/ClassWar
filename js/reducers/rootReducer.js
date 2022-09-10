@@ -67,6 +67,7 @@ const initGameState = () => {
     gdp: 0,
 
     ticker: ['Welcome to The Command Economy'],
+    ticksToNextPolicy: 5,
     time: 0,
 
     policy: null,

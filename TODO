@@ -1,4 +1,8 @@
 
+- - - - - PLAYTEST - - - - - -
+  - 10x all money values to give a little more leeway
+
+
 - - - - - SIMULATION - - - - - -
   - favorability changes
     - put in ticker for big changes (ie can't afford)
@@ -13,7 +17,9 @@
   - add in additional factions
     - landowners, intelligentsia, army
     - maybe they appear later?
+      - start with landowners + working class
   - construction:
+    - how to lower unemployment once corps are making more money?
     - productivity is just a wealth transfer to the government...
     - how to compute GDP
       - exports/imports? what is the point?
@@ -23,12 +29,15 @@
     - unemployed could be a function of wages/wealth of corps
     - how does corp population fit in?
 
+
 - - - - - - POLICIES - - - - - -
   - policy system
+    - track ticks since last policy to decide when to show them instead of modulo
     - allow some policies to be picked multiple times and others to only be picked once
     - add weights to policies to make them more likely to be selected based on sim state
     - maybe have a hard-coded smaller set of policies to choose from at first
     - procedurally generate policies?
+    - keep a history of all polices accepted and rejected
   - many policies
   - policy UI
     - better lay out of the policy and percents/dollars
@@ -42,6 +51,3 @@
 
 
 
-./reducers/gameReducer.js:        // TODO: compute unfavorability if can't afford subsidy
-./reducers/gameReducer.js:      // TODO: compute unfavorability/unemployement if corp can't pay
-./reducers/gameReducer.js:      // TODO: compute unfavorability/unemployement if corp can't pay

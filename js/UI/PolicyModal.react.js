@@ -75,6 +75,8 @@ function PolicyModal(props): React.Node {
           for (const change of policy.changes) {
             dispatch({type: 'POLICY_CHANGE', change});
           }
+          // make supporters happy
+          dispatch({type: 'CHANGE_FAVORABILITY', factions: policy.support, amount: 5});
           // make opposition unhappy
           dispatch({type: 'CHANGE_FAVORABILITY', factions: policy.oppose, amount: -5});
           // clear policy
@@ -82,6 +84,8 @@ function PolicyModal(props): React.Node {
           dispatch({type: 'DISMISS_MODAL'});
         }},
         {label: 'Reject', onClick: () => {
+          // make opposition happy
+          dispatch({type: 'CHANGE_FAVORABILITY', factions: policy.oppose, amount: 5});
           // make supporters unhappy
           dispatch({type: 'CHANGE_FAVORABILITY', factions: policy.support, amount: -5});
           // clear policy

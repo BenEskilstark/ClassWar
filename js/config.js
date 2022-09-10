@@ -26,10 +26,13 @@ const config = {
 
   capital: 1000000,
 
+  subsidyDeficitMult: 5,
+  wagesDeficitMult: 5,
+
   factions: {
     ['Corporations']: {
       name: 'Corporations',
-      wealth: 500000,
+      wealth: 100000,
       taxRate: val(0.2, 0, 0.5),
       subsidy: val(0, 0, 50000),
       population: val(50, 1, 100, true),
@@ -88,6 +91,10 @@ const policies = [
       operation: 'ADD',
       value: val(5000, 1000, 50000),
     }],
+    useOnce: false,
+    getWeight: (game) => {
+
+    },
   },
   {
     name: 'Lower Corporate Tax Rate',

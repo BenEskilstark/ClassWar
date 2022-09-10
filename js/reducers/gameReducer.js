@@ -3,6 +3,7 @@
 const {config} = require('../config');
 const {displayMoney, displayPercent} = require('../utils/display');
 const {clamp, subtractWithDeficit} = require('bens_utils').math;
+const {randomIn, normalIn, oneOf, weightedOneOf} = require('bens_utils').stochastic;
 
 const gameReducer = (game, action) => {
   switch (action.type) {
@@ -65,6 +66,10 @@ const gameReducer = (game, action) => {
     }
     case 'TICK': {
       game.time += 1;
+      game.ticksToNextPolicy--;
+      if (game.ticksToNextPolicy == -1) {
+        game.ticksToNextPolicy = normalIn(4, 8);
+      }
 
       // subsidies (for every faction)
       let prevWealth = {}; // starting wealth for every faction
@@ -78,9 +83,18 @@ const gameReducer = (game, action) => {
         } = subtractWithDeficit(game.capital, faction.subsidy);
         game.capital = nextCapital;
         faction.wealth += subsidyPaid;
-        // TODO: compute unfavorability if can't afford subsidy
+        // compute unfavorability if can't afford subsidy
         if (capitalDeficit != 0) {
-          console.log("gov can't pay subsidy", factionName, capitalDeficit);
+          appendTicker(game,
+            `Government is ${displayMoney(capitalDeficit)} short of subsidy for ${factionName}`,
+          );
+          const favorabilityPenalty = Math.ceil(
+            (capitalDeficit / faction.subsidy)
+            * config.subsidyDeficitMult);
+          appendTicker(game,
+            `This is reducing their favorability for the government by ${displayPercent(favorabilityPenalty / 100)}`,
+          );
+          faction.favorability = clamp(faction.favorability - favorabilityPenalty, 0, 100);
         }
       }
 
@@ -107,9 +121,15 @@ const gameReducer = (game, action) => {
       game.capital += midsTaxesCollected;
       mids.wealth += midsWagesPaid - midsTaxesCollected;
       corps.wealth = nextCorpWealth;
-      // TODO: compute unfavorability/unemployement if corp can't pay
+      // compute unemployement if corp can't pay
       if (corpWealthDeficit != 0) {
-        console.log("corps can't pay mids", corpWealthDeficit);
+        appendTicker(game,
+          `Corporations are ${displayMoney(corpWealthDeficit)} short of wages for Middle Class`,
+        );
+        appendTicker(game,
+          `They'll have to fire everyone they can't afford to pay`);
+        mids.props.unemployment +=
+          (corpWealthDeficit / mids.props.wage) / mids.population;
       }
 
 
@@ -129,9 +149,15 @@ const gameReducer = (game, action) => {
       game.capital += poorsTaxesCollected;
       poors.wealth += poorsWagesPaid - poorsTaxesCollected;
       corps.wealth = nextCorpWealth2;
-      // TODO: compute unfavorability/unemployement if corp can't pay
+      // compute unfavorability/unemployement if corp can't pay
       if (corpWealthDeficit2 != 0) {
-        console.log("corps can't pay poors", corpWealthDeficit2);
+        appendTicker(game,
+          `Corporations are ${displayMoney(corpWealthDeficit2)} short of wages for Working Class`,
+        );
+        appendTicker(game,
+          `They'll have to fire everyone they can't afford to pay`);
+        poors.props.unemployment +=
+          (corpWealthDeficit2 / poors.props.wage) / poors.population;
       }
 
       // compute production of goods (and gdp?)

@@ -18,7 +18,7 @@ const initEventsSystem = (store) => {
     if (game.time == 0) return;
     time = game.time;
 
-    if (game.time > 0 && game.time % normalIn(3, 8) == 0) {
+    if (game.ticksToNextPolicy == 0) {
       dispatch({type: 'STOP_TICK'});
       const chosenPolicy = oneOf(policies);
       dispatch({type: 'SET', property: 'policy', value: chosenPolicy});
