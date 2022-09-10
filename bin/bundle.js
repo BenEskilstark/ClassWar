@@ -311,28 +311,95 @@ var config = {
   }), _factions)
 };
 
-var policies = [{
+var policies = [
+// Corporate Policies
+{
   name: 'Subsidize Corporations',
-  description: 'Business is important to the economy so we need to give all the ' + 'support that we can afford!',
+  description: 'Business is bedrock of the economy so we need to give all the ' + 'support that we can afford.',
   support: ['Corporations'],
   oppose: ['Middle Class', 'Working Class'],
   changes: [{
     path: ['factions', 'Corporations', 'subsidy'],
     operation: 'ADD',
-    value: val(5000, 1000, 50000)
+    value: 10000
   }],
   useOnce: false,
-  getWeight: function getWeight(game) {}
+  getWeight: function getWeight(game) {
+    return 100 - game.factions['Corporations'].favorability;
+  }
 }, {
   name: 'Lower Corporate Tax Rate',
-  description: 'Business leaders NEED lower taxes in order to keep the economy ' + 'going, please lower their taxes',
+  description: 'Business leaders NEED lower taxes in order to keep the economy ' + 'going, please lower their taxes.',
   support: ['Corporations'],
   oppose: ['Middle Class', 'Working Class'],
   changes: [{
     path: ['factions', 'Corporations', 'taxRate'],
     operation: 'MULTIPLY',
     value: 0.5
-  }]
+  }],
+  getWeight: function getWeight(game) {
+    return 100 - game.factions['Corporations'].favorability;
+  }
+}, {
+  name: 'Raise Middle Class Tax Rate',
+  description: "To balance the budget, we'll have to ask for a fairer share from " + "the more privileged among us.",
+  support: ['Corporations'],
+  oppose: ['Middle Class'],
+  changes: [{
+    path: ['factions', 'Middle Class', 'taxRate'],
+    operation: 'MULTIPLY',
+    value: 1.5
+  }],
+  getWeight: function getWeight(game) {
+    // TODO: could be more likely when capital is going down
+    return 100 - game.factions['Corporations'].favorability;
+  }
+}, {
+  name: 'Raise Working Class Tax Rate',
+  description: "In these times of austerity, everyone must chip in to keep " + "society afloat.",
+  support: ['Corporations'],
+  oppose: ['Working Class'],
+  changes: [{
+    path: ['factions', 'Working Class', 'taxRate'],
+    operation: 'MULTIPLY',
+    value: 1.5
+  }],
+  getWeight: function getWeight(game) {
+    // TODO: could be more likely when capital is going down
+    return 100 - game.factions['Corporations'].favorability;
+  }
+},
+
+// Middle Class Policies
+{
+  name: 'Lower Middle Class Tax Rate',
+  description: 'A thriving Middle Class is critical to a healthy society -- ' + ' we must reduce their burden by lowering their taxes.',
+  support: ['Middle Class'],
+  oppose: ['Working Class'],
+  changes: [{
+    path: ['factions', 'Middle Class', 'taxRate'],
+    operation: 'MULTIPLY',
+    value: 0.5
+  }],
+  getWeight: function getWeight(game) {
+    return 100 - game.factions['Middle Class'].favorability;
+  }
+},
+
+// Working Class Policies
+{
+  name: 'Lower Working Class Tax Rate',
+  description: "Enough is enough! We must stop taking so much from the people!",
+  support: ['Working Class'],
+  oppose: ['Corporations'],
+  changes: [{
+    path: ['factions', 'Working Class', 'taxRate'],
+    operation: 'MULTIPLY',
+    value: 0.5
+  }],
+  getWeight: function getWeight(game) {
+    return 100 - game.factions['Working Class'].favorability;
+  }
 }];
 
 module.exports = {
@@ -785,25 +852,17 @@ var initEventsSystem = function initEventsSystem(store) {
 
     if (game.ticksToNextPolicy == 0) {
       dispatch({ type: 'STOP_TICK' });
-      var chosenPolicy = oneOf(policies);
+      var policyWeights = policies.map(function (p) {
+        return p.getWeight(game);
+      });
+      console.log(policyWeights);
+      var chosenPolicy = weightedOneOf(policies, policyWeights);
       dispatch({ type: 'SET', property: 'policy', value: chosenPolicy });
       dispatch({
         type: 'SET_MODAL',
         modal: React.createElement(PolicyModal, { dispatch: dispatch, policy: chosenPolicy })
       });
     }
-
-    // if (time == 120) {
-    //   dispatch({type: 'APPEND_TICKER', message:
-    //     'Industrial process for shirts discovered'
-    //   });
-    //   dispatch({type: 'APPEND_TICKER', message:
-    //     'Simulation paused while you reconfigure the economy. Press Start to resume',
-    //   });
-    //   dispatch({type: 'UNLOCK_COMMODITY', name: 'Shirts'});
-    //   dispatch({type: 'STOP_TICK'});
-    // }
-
   });
 };
 
@@ -1126,12 +1185,18 @@ function Faction(properties) {
 
   var propList = [];
   for (var propName in props) {
+    var displayedVal = props[propName];
+    if (propName == 'unemployment') {
+      displayedVal = displayPercent(props[propName]);
+    } else if (propName == 'wage' || propName == 'rent') {
+      displayedVal = displayMoney(props[propName]);
+    }
     propList.push(React.createElement(
       'div',
       { key: 'prop_' + name + '_' + propName },
       propName,
       ': ',
-      props[propName],
+      displayedVal,
       ' ',
       React.createElement(Indicator, { value: props[propName] })
     ));

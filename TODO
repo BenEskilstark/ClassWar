@@ -1,6 +1,10 @@
 
 - - - - - PLAYTEST - - - - - -
   - 10x all money values to give a little more leeway
+  - add government type to main info based on favorability
+  - how to lower unemployment once corps are making more money?
+  - why can't corps afford to pay middle classes by just a bit when they definitely can?
+  - favorability goes down when unemployment is high --> how to indicate this?
 
 
 - - - - - SIMULATION - - - - - -
@@ -19,7 +23,6 @@
     - maybe they appear later?
       - start with landowners + working class
   - construction:
-    - how to lower unemployment once corps are making more money?
     - productivity is just a wealth transfer to the government...
     - how to compute GDP
       - exports/imports? what is the point?
@@ -32,9 +35,8 @@
 
 - - - - - - POLICIES - - - - - -
   - policy system
-    - track ticks since last policy to decide when to show them instead of modulo
     - allow some policies to be picked multiple times and others to only be picked once
-    - add weights to policies to make them more likely to be selected based on sim state
+    - make it so randomized change values are different every time that policy comes up
     - maybe have a hard-coded smaller set of policies to choose from at first
     - procedurally generate policies?
     - keep a history of all polices accepted and rejected
@@ -51,3 +53,5 @@
 
 
 
+./config.js:      // TODO: could be more likely when capital is going down
+./config.js:      // TODO: could be more likely when capital is going down

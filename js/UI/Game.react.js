@@ -157,9 +157,15 @@ function Faction(properties): React.Node {
 
   const propList = [];
   for (const propName in props) {
+    let displayedVal = props[propName];
+    if (propName == 'unemployment') {
+      displayedVal = displayPercent(props[propName]);
+    } else if (propName == 'wage' || propName == 'rent') {
+      displayedVal = displayMoney(props[propName]);
+    }
     propList.push(
       <div key={'prop_' + name + '_' + propName}>
-        {propName}: {props[propName]} <Indicator value={props[propName]} />
+        {propName}: {displayedVal} <Indicator value={props[propName]} />
       </div>
     );
   }

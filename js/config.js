@@ -80,26 +80,27 @@ const config = {
 };
 
 const policies = [
+  // Corporate Policies
   {
     name: 'Subsidize Corporations',
-    description: 'Business is important to the economy so we need to give all the ' +
-      'support that we can afford!',
+    description: 'Business is bedrock of the economy so we need to give all the ' +
+      'support that we can afford.',
     support: ['Corporations'],
     oppose: ['Middle Class', 'Working Class'],
     changes: [{
       path: ['factions', 'Corporations', 'subsidy'],
       operation: 'ADD',
-      value: val(5000, 1000, 50000),
+      value: 10000,
     }],
     useOnce: false,
     getWeight: (game) => {
-
+      return 100 - game.factions['Corporations'].favorability;
     },
   },
   {
     name: 'Lower Corporate Tax Rate',
     description: 'Business leaders NEED lower taxes in order to keep the economy ' +
-      'going, please lower their taxes',
+      'going, please lower their taxes.',
     support: ['Corporations'],
     oppose: ['Middle Class', 'Working Class'],
     changes: [{
@@ -107,6 +108,74 @@ const policies = [
       operation: 'MULTIPLY',
       value: 0.5,
     }],
+    getWeight: (game) => {
+      return 100 - game.factions['Corporations'].favorability;
+    },
+  },
+  {
+    name: 'Raise Middle Class Tax Rate',
+    description: "To balance the budget, we'll have to ask for a fairer share from " +
+      "the more privileged among us.",
+    support: ['Corporations'],
+    oppose: ['Middle Class'],
+    changes: [{
+      path: ['factions', 'Middle Class', 'taxRate'],
+      operation: 'MULTIPLY',
+      value: 1.5,
+    }],
+    getWeight: (game) => {
+      // TODO: could be more likely when capital is going down
+      return 100 - game.factions['Corporations'].favorability;
+    },
+  },
+  {
+    name: 'Raise Working Class Tax Rate',
+    description: "In these times of austerity, everyone must chip in to keep " +
+      "society afloat.",
+    support: ['Corporations'],
+    oppose: ['Working Class'],
+    changes: [{
+      path: ['factions', 'Working Class', 'taxRate'],
+      operation: 'MULTIPLY',
+      value: 1.5,
+    }],
+    getWeight: (game) => {
+      // TODO: could be more likely when capital is going down
+      return 100 - game.factions['Corporations'].favorability;
+    },
+  },
+
+  // Middle Class Policies
+  {
+    name: 'Lower Middle Class Tax Rate',
+    description: 'A thriving Middle Class is critical to a healthy society -- ' +
+      ' we must reduce their burden by lowering their taxes.',
+    support: ['Middle Class'],
+    oppose: ['Working Class'],
+    changes: [{
+      path: ['factions', 'Middle Class', 'taxRate'],
+      operation: 'MULTIPLY',
+      value: 0.5,
+    }],
+    getWeight: (game) => {
+      return 100 - game.factions['Middle Class'].favorability;
+    },
+  },
+
+  // Working Class Policies
+  {
+    name: 'Lower Working Class Tax Rate',
+    description: "Enough is enough! We must stop taking so much from the people!",
+    support: ['Working Class'],
+    oppose: ['Corporations'],
+    changes: [{
+      path: ['factions', 'Working Class', 'taxRate'],
+      operation: 'MULTIPLY',
+      value: 0.5,
+    }],
+    getWeight: (game) => {
+      return 100 - game.factions['Working Class'].favorability;
+    },
   },
 ];
 
