@@ -107,9 +107,9 @@ function Info(props): React.Node {
         marginRight: 4,
       }}
     >
-      <div>
+      <Value deltas={game.capitalDelta} displayFn={displayMoney}>
         Capital: {displayMoney(game.capital)} <Indicator value={game.capital} />
-      </div>
+      </Value>
       <div>
         GDP: ${game.gdp}
       </div>
@@ -157,16 +157,24 @@ function Faction(properties): React.Node {
 
   const propList = [];
   for (const propName in props) {
+    if (propName.slice(-5) == 'Delta') continue;
     let displayedVal = props[propName];
+    let displayFn = (v) => v;
     if (propName == 'unemployment') {
       displayedVal = displayPercent(props[propName]);
+      displayFn = displayPercent;
     } else if (propName == 'wage' || propName == 'rent') {
       displayedVal = displayMoney(props[propName]);
+      displayFn = displayMoney;
     }
     propList.push(
-      <div key={'prop_' + name + '_' + propName}>
+      <Value
+        key={'prop_' + name + '_' + propName}
+        deltas={props[propName + 'Delta']}
+        displayFn={displayFn}
+      >
         {propName}: {displayedVal} <Indicator value={props[propName]} />
-      </div>
+      </Value>
     );
   }
 
@@ -177,16 +185,92 @@ function Faction(properties): React.Node {
       }}
     >
       <div><b>{name}</b></div>
-      <div>Wealth: {displayMoney(wealth)} <Indicator value={wealth} minChange={1}/></div>
-      <div>Tax Rate: {displayPercent(taxRate)} <Indicator value={taxRate} /></div>
-      <div>Subsidy: {displayMoney(subsidy)} <Indicator value={subsidy} minChange={1}/></div>
-      <div>Population: {population} <Indicator value={population} /></div>
-      <div>Favorability: {displayPercent(favorability / 100)} <Indicator value={favorability} /></div>
+      <Value deltas={properties.wealthDelta} displayFn={displayMoney}>
+        Wealth: {displayMoney(wealth)} <Indicator value={wealth} minChange={1}/>
+      </Value>
+      <Value deltas={properties.taxRateDelta} displayFn={displayPercent}>
+        Tax Rate: {displayPercent(taxRate)} <Indicator value={taxRate} />
+      </Value>
+      <Value deltas={properties.subsidyDelta} displayFn={displayMoney}>
+        Subsidy: {displayMoney(subsidy)} <Indicator value={subsidy} minChange={1}/>
+      </Value>
+      <Value deltas={properties.populationDelta}>
+        Population: {population} <Indicator value={population} />
+      </Value>
+      <Value deltas={properties.favorabilityDelta} displayFn={displayPercent}>
+        Favorability: {displayPercent(favorability / 100)} <Indicator value={favorability} />
+      </Value>
       <Divider />
       {propList}
     </InfoCard>
   );
 }
+
+function Value(props): React.Node {
+  const {deltas, displayFn} = props;
+  const displayDeltas = [];
+  let total = 0;
+  for (const name in deltas) {
+    const val = deltas[name];
+    let color = 'black';
+    if (val < 0) color = 'red';
+    if (val > 0) color = 'green';
+    total += val;
+    displayDeltas.push(
+      <div key={"delta_" + name}>
+        {name}: <span style={{color}}>{displayFn ? displayFn(val) : val}</span>
+      </div>
+    );
+  }
+
+  let totalColor = 'black';
+  if (total < 0) totalColor = 'red';
+  if (total > 0) totalColor = 'green';
+
+  let hoverCard = null;
+  if (displayDeltas.length > 0) {
+    hoverCard = (
+      <div
+        className="hidden"
+        style={{
+          position: 'absolute',
+          top: 18,
+          left: 36,
+          zIndex: 5,
+          maxHeight: 500,
+          color: 'black',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <InfoCard >
+          {displayDeltas}
+          <Divider />
+          <b>
+            Total:
+            <span style={{color:totalColor}}>
+              {total > 0 ? '+' : ''}{displayFn ? displayFn(total) : total}
+            </span>
+          </b>
+        </InfoCard>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <span
+        className="displayChildOnHover"
+        style={{
+          position: 'relative',
+        }}
+      >
+        {props.children}
+        {hoverCard}
+      </span>
+    </div>
+  );
+}
+
 
 
 module.exports = Game;

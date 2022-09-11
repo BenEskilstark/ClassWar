@@ -1,6 +1,9 @@
 // @flow
 
 const displayMoney = (money): string => {
+  if (money < 0) {
+    return '-$' + Number(Math.floor(Math.abs(money))).toLocaleString();
+  }
   if (money < 1000000) {
     return '$' + Number(Math.floor(money)).toLocaleString();
   } else {

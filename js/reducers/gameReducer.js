@@ -2,6 +2,7 @@
 
 const {config} = require('../config');
 const {displayMoney, displayPercent} = require('../utils/display');
+const {initFactionDeltas} = require('../utils/factionUtils');
 const {clamp, subtractWithDeficit} = require('bens_utils').math;
 const {randomIn, normalIn, oneOf, weightedOneOf} = require('bens_utils').stochastic;
 
@@ -71,6 +72,11 @@ const gameReducer = (game, action) => {
         game.ticksToNextPolicy = normalIn(4, 8);
       }
 
+      // clear faction deltas
+      for (const factionName in game.factions) {
+        game.factions[factionName] = initFactionDeltas(game.factions[factionName]);
+      }
+
       // subsidies (for every faction)
       let prevWealth = {}; // starting wealth for every faction
       for (const factionName in game.factions) {
@@ -82,7 +88,9 @@ const gameReducer = (game, action) => {
           amount: subsidyPaid,
         } = subtractWithDeficit(game.capital, faction.subsidy);
         game.capital = nextCapital;
+        game.capitalDelta[`${factionName} subsidy`] = -1 * subsidyPaid;
         faction.wealth += subsidyPaid;
+        faction.wealthDelta['Government subsidy'] = subsidyPaid;
         // compute unfavorability if can't afford subsidy
         if (capitalDeficit != 0) {
           appendTicker(game,
@@ -95,6 +103,7 @@ const gameReducer = (game, action) => {
             `This is reducing their favorability for the government by ${displayPercent(favorabilityPenalty / 100)}`,
           );
           faction.favorability = clamp(faction.favorability - favorabilityPenalty, 0, 100);
+          faction.favorabilityDelta['Unpaid subsidy'] = favorabilityPenalty;
         }
       }
 
@@ -119,8 +128,12 @@ const gameReducer = (game, action) => {
 
       const midsTaxesCollected = midsWagesPaid * mids.taxRate;
       game.capital += midsTaxesCollected;
+      game.capitalDelta['Middle Class taxes'] = midsTaxesCollected;
       mids.wealth += midsWagesPaid - midsTaxesCollected;
+      mids.wealthDelta['Wages paid'] = midsWagesPaid;
+      mids.wealthDelta['Taxes paid'] = -1 * midsTaxesCollected;
       corps.wealth = nextCorpWealth;
+      corps.wealthDelta['Middle Class wages paid'] = -1 * midsWagesPaid;
       // compute unemployement if corp can't pay
       if (corpWealthDeficit != 0) {
         appendTicker(game,
@@ -128,8 +141,10 @@ const gameReducer = (game, action) => {
         );
         appendTicker(game,
           `They'll have to fire everyone they can't afford to pay`);
-        mids.props.unemployment +=
+        const unemploymentDelta =
           (corpWealthDeficit / mids.props.wage) / mids.population;
+        mids.props.unemployment += unemploymentDelta;
+        mids.props.unemploymentDelta['Unpaid workers'] = unemploymentDelta;
       }
 
 
@@ -147,8 +162,12 @@ const gameReducer = (game, action) => {
 
       const poorsTaxesCollected = poorsWagesPaid * poors.taxRate;
       game.capital += poorsTaxesCollected;
+      game.capitalDelta['Working Class taxes'] = poorsTaxesCollected;
       poors.wealth += poorsWagesPaid - poorsTaxesCollected;
+      poors.wealthDelta['Wages paid'] = poorsWagesPaid;
+      poors.wealthDelta['Taxes paid'] = -1 * poorsTaxesCollected;
       corps.wealth = nextCorpWealth2;
+      corps.wealthDelta['Working Class wages paid'] = -1 * poorsWagesPaid;
       // compute unfavorability/unemployement if corp can't pay
       if (corpWealthDeficit2 != 0) {
         appendTicker(game,
@@ -156,8 +175,10 @@ const gameReducer = (game, action) => {
         );
         appendTicker(game,
           `They'll have to fire everyone they can't afford to pay`);
-        poors.props.unemployment +=
+        const unemploymentDelta =
           (corpWealthDeficit2 / poors.props.wage) / poors.population;
+        poors.props.unemployment += unemploymentDelta;
+        poors.props.unemploymentDelta['Unpaid workers'] = unemploymentDelta;
       }
 
       // compute production of goods (and gdp?)
@@ -168,23 +189,32 @@ const gameReducer = (game, action) => {
       // compute purchase of goods (w/ tax)
       const midSpend = mids.wealth * mids.props.consumerism;
       mids.wealth -= midSpend;
+      mids.wealthDelta['Goods purchased'] = -1 * midSpend;
       const poorSpend = poors.wealth * poors.props.consumerism;
       poors.wealth -= poorSpend;
+      poors.wealthDelta['Goods purchased'] = -1 * poorSpend;
       const corpProfit = midSpend + poorSpend;
       const corpTaxesCollected = corpProfit * corps.taxRate;
       game.capital += corpTaxesCollected;
+      game.capitalDelta['Corporate taxes'] = corpTaxesCollected;
       corps.wealth += corpProfit - corpTaxesCollected;
+      corps.wealthDelta['Business profits'] = corpProfit;
+      corps.wealthDelta['Taxes paid'] = -1 * corpTaxesCollected;
 
       // compute favorability (gdp change, taxRate, wealth change, unemployment)
       for (const factionName in game.factions) {
         const faction = game.factions[factionName];
         if (faction.wealth < prevWealth[factionName]) {
           faction.favorability -= 1;
+          faction.favorabilityDelta['Wealth decreasing'] = -1/100;
         } else if (faction.wealth - prevWealth[factionName] > prevWealth[factionName] * 0.02) {
           faction.favorability += 1;
+          faction.favorabilityDelta['Wealth increasing'] = 1/100;
         }
         if (faction.props.unemployment > 0.1) {
-          faction.favorability -= Math.floor(faction.props.unemployment * 5);
+          const favorabilityDelta = Math.floor(faction.props.unemployment * 5);
+          faction.favorability -= favorabilityDelta;
+          faction.favorabilityDelta['High unemployment'] = -1 * favorabilityDelta / 100;
         }
         faction.favorability = clamp(faction.favorability, 0, 100);
       }

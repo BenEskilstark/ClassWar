@@ -2,14 +2,15 @@
 - - - - - PLAYTEST - - - - - -
   - 10x all money values to give a little more leeway
   - add government type to main info based on favorability
+    (and wealth? or history of favorable policies)
   - how to lower unemployment once corps are making more money?
+  - configure mid/working classes to have inelastic demand for some goods
   - why can't corps afford to pay middle classes by just a bit when they definitely can?
-  - favorability goes down when unemployment is high --> how to indicate this?
+  - ticker with a date every turn to separate what happened this turn
 
 
 - - - - - SIMULATION - - - - - -
   - favorability changes
-    - put in ticker for big changes (ie can't afford)
     - consequences of unfavorability per faction
       - poor -> strikes, then revolution
       - middle class -> strikes
@@ -23,7 +24,6 @@
     - maybe they appear later?
       - start with landowners + working class
   - construction:
-    - productivity is just a wealth transfer to the government...
     - how to compute GDP
       - exports/imports? what is the point?
       - separate consumerism into demand + prices
@@ -46,6 +46,7 @@
 
 
 - - - - - - UI - - - - - -
+  - allow hovercards to have height greater than parent card
   - get better display (e.g. %'s) for faction-specific props
   - colored indicator arrow component based off of Plot
     - get up and down arrows to look the same

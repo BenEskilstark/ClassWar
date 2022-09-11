@@ -4,6 +4,7 @@ const {gameReducer} = require('./gameReducer');
 const {modalReducer} = require('./modalReducer');
 const {config, policies} = require('../config');
 const {deepCopy} = require('bens_utils').helpers;
+const {initFactionDeltas} = require('../utils/factionUtils');
 const {totalPopulation} = require('../selectors/selectors');
 
 import type {State, Action} from '../types';
@@ -64,7 +65,9 @@ const initGameState = () => {
   const game = {
     factions: {},
     capital: config.capital,
+    capitalDelta: {},
     gdp: 0,
+    gdpDelta: {},
 
     ticker: ['Welcome to The Command Economy'],
     ticksToNextPolicy: 5,
@@ -73,8 +76,10 @@ const initGameState = () => {
     policy: null,
   };
 
+  // deepCopy factions and init deltas for them
   for (const factionName in config.factions) {
-    game.factions[factionName] = deepCopy(config.factions[factionName]);
+    game.factions[factionName] = initFactionDeltas(deepCopy(config.factions[factionName]));
+    const faction = game.factions[factionName];
   }
 
   return game;

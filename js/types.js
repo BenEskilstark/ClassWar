@@ -13,6 +13,13 @@ export type Faction = {
   props: Object, // faction-specific properties
 };
 
+// factions will also have a [property]Delta value for each numeric property
+// that they have that will be a dictionary of name-value pairs (Deltas, below)
+// which indicate the values that contributed to the change in this property
+export type Delta = {
+  [name: String]: number,
+}
+
 export type Change = {
   path: Array<String>, // path in game state to the change
   operation: ?String,  // if given, operation to do to at

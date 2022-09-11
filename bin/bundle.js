@@ -234,7 +234,7 @@ function PolicyModal(props) {
 }
 
 module.exports = PolicyModal;
-},{"../config":2,"../utils/display":14,"bens_ui_components":32,"react":46}],2:[function(require,module,exports){
+},{"../config":2,"../utils/display":14,"bens_ui_components":33,"react":47}],2:[function(require,module,exports){
 'use strict';
 
 var _factions;
@@ -406,7 +406,7 @@ module.exports = {
   config: config,
   policies: policies
 };
-},{"bens_utils":39}],3:[function(require,module,exports){
+},{"bens_utils":40}],3:[function(require,module,exports){
 'use strict';
 
 var _require = require('redux'),
@@ -435,7 +435,7 @@ function renderUI(store) {
     modal: state.modal
   }), document.getElementById('container'));
 }
-},{"./reducers/rootReducer":6,"./ui/Main.react":12,"react":46,"react-dom":43,"redux":47}],4:[function(require,module,exports){
+},{"./reducers/rootReducer":6,"./ui/Main.react":12,"react":47,"react-dom":44,"redux":48}],4:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -446,6 +446,9 @@ var _require = require('../config'),
 var _require2 = require('../utils/display'),
     displayMoney = _require2.displayMoney,
     displayPercent = _require2.displayPercent;
+
+var _require3 = require('../utils/factionUtils'),
+    initFactionDeltas = _require3.initFactionDeltas;
 
 var _require$math = require('bens_utils').math,
     clamp = _require$math.clamp,
@@ -556,11 +559,16 @@ var gameReducer = function gameReducer(game, action) {
           game.ticksToNextPolicy = normalIn(4, 8);
         }
 
+        // clear faction deltas
+        for (var _factionName in game.factions) {
+          game.factions[_factionName] = initFactionDeltas(game.factions[_factionName]);
+        }
+
         // subsidies (for every faction)
         var prevWealth = {}; // starting wealth for every faction
-        for (var _factionName in game.factions) {
-          var _faction = game.factions[_factionName];
-          prevWealth[_factionName] = _faction.wealth;
+        for (var _factionName2 in game.factions) {
+          var _faction = game.factions[_factionName2];
+          prevWealth[_factionName2] = _faction.wealth;
 
           var _subtractWithDeficit = subtractWithDeficit(game.capital, _faction.subsidy),
               nextCapital = _subtractWithDeficit.result,
@@ -568,13 +576,16 @@ var gameReducer = function gameReducer(game, action) {
               subsidyPaid = _subtractWithDeficit.amount;
 
           game.capital = nextCapital;
+          game.capitalDelta[_factionName2 + ' subsidy'] = -1 * subsidyPaid;
           _faction.wealth += subsidyPaid;
+          _faction.wealthDelta['Government subsidy'] = subsidyPaid;
           // compute unfavorability if can't afford subsidy
           if (capitalDeficit != 0) {
-            appendTicker(game, 'Government is ' + displayMoney(capitalDeficit) + ' short of subsidy for ' + _factionName);
+            appendTicker(game, 'Government is ' + displayMoney(capitalDeficit) + ' short of subsidy for ' + _factionName2);
             var favorabilityPenalty = Math.ceil(capitalDeficit / _faction.subsidy * config.subsidyDeficitMult);
             appendTicker(game, 'This is reducing their favorability for the government by ' + displayPercent(favorabilityPenalty / 100));
             _faction.favorability = clamp(_faction.favorability - favorabilityPenalty, 0, 100);
+            _faction.favorabilityDelta['Unpaid subsidy'] = favorabilityPenalty;
           }
         }
 
@@ -598,13 +609,19 @@ var gameReducer = function gameReducer(game, action) {
 
         var midsTaxesCollected = midsWagesPaid * mids.taxRate;
         game.capital += midsTaxesCollected;
+        game.capitalDelta['Middle Class taxes'] = midsTaxesCollected;
         mids.wealth += midsWagesPaid - midsTaxesCollected;
+        mids.wealthDelta['Wages paid'] = midsWagesPaid;
+        mids.wealthDelta['Taxes paid'] = -1 * midsTaxesCollected;
         corps.wealth = nextCorpWealth;
+        corps.wealthDelta['Middle Class wages paid'] = -1 * midsWagesPaid;
         // compute unemployement if corp can't pay
         if (corpWealthDeficit != 0) {
           appendTicker(game, 'Corporations are ' + displayMoney(corpWealthDeficit) + ' short of wages for Middle Class');
           appendTicker(game, 'They\'ll have to fire everyone they can\'t afford to pay');
-          mids.props.unemployment += corpWealthDeficit / mids.props.wage / mids.population;
+          var unemploymentDelta = corpWealthDeficit / mids.props.wage / mids.population;
+          mids.props.unemployment += unemploymentDelta;
+          mids.props.unemploymentDelta['Unpaid workers'] = unemploymentDelta;
         }
 
         // compute payment to working class (with tax)
@@ -620,13 +637,19 @@ var gameReducer = function gameReducer(game, action) {
 
         var poorsTaxesCollected = poorsWagesPaid * poors.taxRate;
         game.capital += poorsTaxesCollected;
+        game.capitalDelta['Working Class taxes'] = poorsTaxesCollected;
         poors.wealth += poorsWagesPaid - poorsTaxesCollected;
+        poors.wealthDelta['Wages paid'] = poorsWagesPaid;
+        poors.wealthDelta['Taxes paid'] = -1 * poorsTaxesCollected;
         corps.wealth = nextCorpWealth2;
+        corps.wealthDelta['Working Class wages paid'] = -1 * poorsWagesPaid;
         // compute unfavorability/unemployement if corp can't pay
         if (corpWealthDeficit2 != 0) {
           appendTicker(game, 'Corporations are ' + displayMoney(corpWealthDeficit2) + ' short of wages for Working Class');
           appendTicker(game, 'They\'ll have to fire everyone they can\'t afford to pay');
-          poors.props.unemployment += corpWealthDeficit2 / poors.props.wage / poors.population;
+          var _unemploymentDelta = corpWealthDeficit2 / poors.props.wage / poors.population;
+          poors.props.unemployment += _unemploymentDelta;
+          poors.props.unemploymentDelta['Unpaid workers'] = _unemploymentDelta;
         }
 
         // compute production of goods (and gdp?)
@@ -637,23 +660,32 @@ var gameReducer = function gameReducer(game, action) {
         // compute purchase of goods (w/ tax)
         var midSpend = mids.wealth * mids.props.consumerism;
         mids.wealth -= midSpend;
+        mids.wealthDelta['Goods purchased'] = -1 * midSpend;
         var poorSpend = poors.wealth * poors.props.consumerism;
         poors.wealth -= poorSpend;
+        poors.wealthDelta['Goods purchased'] = -1 * poorSpend;
         var corpProfit = midSpend + poorSpend;
         var corpTaxesCollected = corpProfit * corps.taxRate;
         game.capital += corpTaxesCollected;
+        game.capitalDelta['Corporate taxes'] = corpTaxesCollected;
         corps.wealth += corpProfit - corpTaxesCollected;
+        corps.wealthDelta['Business profits'] = corpProfit;
+        corps.wealthDelta['Taxes paid'] = -1 * corpTaxesCollected;
 
         // compute favorability (gdp change, taxRate, wealth change, unemployment)
-        for (var _factionName2 in game.factions) {
-          var _faction2 = game.factions[_factionName2];
-          if (_faction2.wealth < prevWealth[_factionName2]) {
+        for (var _factionName3 in game.factions) {
+          var _faction2 = game.factions[_factionName3];
+          if (_faction2.wealth < prevWealth[_factionName3]) {
             _faction2.favorability -= 1;
-          } else if (_faction2.wealth - prevWealth[_factionName2] > prevWealth[_factionName2] * 0.02) {
+            _faction2.favorabilityDelta['Wealth decreasing'] = -1 / 100;
+          } else if (_faction2.wealth - prevWealth[_factionName3] > prevWealth[_factionName3] * 0.02) {
             _faction2.favorability += 1;
+            _faction2.favorabilityDelta['Wealth increasing'] = 1 / 100;
           }
           if (_faction2.props.unemployment > 0.1) {
-            _faction2.favorability -= Math.floor(_faction2.props.unemployment * 5);
+            var favorabilityDelta = Math.floor(_faction2.props.unemployment * 5);
+            _faction2.favorability -= favorabilityDelta;
+            _faction2.favorabilityDelta['High unemployment'] = -1 * favorabilityDelta / 100;
           }
           _faction2.favorability = clamp(_faction2.favorability, 0, 100);
         }
@@ -697,7 +729,7 @@ function appendTicker(game, message) {
 }
 
 module.exports = { gameReducer: gameReducer };
-},{"../config":2,"../utils/display":14,"bens_utils":39}],5:[function(require,module,exports){
+},{"../config":2,"../utils/display":14,"../utils/factionUtils":15,"bens_utils":40}],5:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -738,8 +770,11 @@ var _require3 = require('../config'),
 
 var deepCopy = require('bens_utils').helpers.deepCopy;
 
-var _require4 = require('../selectors/selectors'),
-    totalPopulation = _require4.totalPopulation;
+var _require4 = require('../utils/factionUtils'),
+    initFactionDeltas = _require4.initFactionDeltas;
+
+var _require5 = require('../selectors/selectors'),
+    totalPopulation = _require5.totalPopulation;
 
 var rootReducer = function rootReducer(state, action) {
   if (state === undefined) return initState();
@@ -799,7 +834,9 @@ var initGameState = function initGameState() {
   var game = {
     factions: {},
     capital: config.capital,
+    capitalDelta: {},
     gdp: 0,
+    gdpDelta: {},
 
     ticker: ['Welcome to The Command Economy'],
     ticksToNextPolicy: 5,
@@ -808,15 +845,17 @@ var initGameState = function initGameState() {
     policy: null
   };
 
+  // deepCopy factions and init deltas for them
   for (var factionName in config.factions) {
-    game.factions[factionName] = deepCopy(config.factions[factionName]);
+    game.factions[factionName] = initFactionDeltas(deepCopy(config.factions[factionName]));
+    var faction = game.factions[factionName];
   }
 
   return game;
 };
 
 module.exports = { rootReducer: rootReducer };
-},{"../config":2,"../selectors/selectors":7,"./gameReducer":4,"./modalReducer":5,"bens_utils":39}],7:[function(require,module,exports){
+},{"../config":2,"../selectors/selectors":7,"../utils/factionUtils":15,"./gameReducer":4,"./modalReducer":5,"bens_utils":40}],7:[function(require,module,exports){
 "use strict";
 
 module.exports = {};
@@ -855,7 +894,6 @@ var initEventsSystem = function initEventsSystem(store) {
       var policyWeights = policies.map(function (p) {
         return p.getWeight(game);
       });
-      console.log(policyWeights);
       var chosenPolicy = weightedOneOf(policies, policyWeights);
       dispatch({ type: 'SET', property: 'policy', value: chosenPolicy });
       dispatch({
@@ -867,7 +905,7 @@ var initEventsSystem = function initEventsSystem(store) {
 };
 
 module.exports = { initEventsSystem: initEventsSystem };
-},{"../UI/PolicyModal.react":1,"../config":2,"bens_utils":39,"react":46}],9:[function(require,module,exports){
+},{"../UI/PolicyModal.react":1,"../config":2,"bens_utils":40,"react":47}],9:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -995,7 +1033,7 @@ var handleGameWon = function handleGameWon(store, dispatch, state, reason) {
 };
 
 module.exports = { initGameOverSystem: initGameOverSystem };
-},{"bens_ui_components":32,"react":46}],10:[function(require,module,exports){
+},{"bens_ui_components":33,"react":47}],10:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -1123,8 +1161,8 @@ function Info(props) {
       }
     },
     React.createElement(
-      'div',
-      null,
+      Value,
+      { deltas: game.capitalDelta, displayFn: displayMoney },
       'Capital: ',
       displayMoney(game.capital),
       ' ',
@@ -1185,15 +1223,25 @@ function Faction(properties) {
 
   var propList = [];
   for (var propName in props) {
+    if (propName.slice(-5) == 'Delta') continue;
     var displayedVal = props[propName];
+    var displayFn = function displayFn(v) {
+      return v;
+    };
     if (propName == 'unemployment') {
       displayedVal = displayPercent(props[propName]);
+      displayFn = displayPercent;
     } else if (propName == 'wage' || propName == 'rent') {
       displayedVal = displayMoney(props[propName]);
+      displayFn = displayMoney;
     }
     propList.push(React.createElement(
-      'div',
-      { key: 'prop_' + name + '_' + propName },
+      Value,
+      {
+        key: 'prop_' + name + '_' + propName,
+        deltas: props[propName + 'Delta'],
+        displayFn: displayFn
+      },
       propName,
       ': ',
       displayedVal,
@@ -1219,40 +1267,40 @@ function Faction(properties) {
       )
     ),
     React.createElement(
-      'div',
-      null,
+      Value,
+      { deltas: properties.wealthDelta, displayFn: displayMoney },
       'Wealth: ',
       displayMoney(wealth),
       ' ',
       React.createElement(Indicator, { value: wealth, minChange: 1 })
     ),
     React.createElement(
-      'div',
-      null,
+      Value,
+      { deltas: properties.taxRateDelta, displayFn: displayPercent },
       'Tax Rate: ',
       displayPercent(taxRate),
       ' ',
       React.createElement(Indicator, { value: taxRate })
     ),
     React.createElement(
-      'div',
-      null,
+      Value,
+      { deltas: properties.subsidyDelta, displayFn: displayMoney },
       'Subsidy: ',
       displayMoney(subsidy),
       ' ',
       React.createElement(Indicator, { value: subsidy, minChange: 1 })
     ),
     React.createElement(
-      'div',
-      null,
+      Value,
+      { deltas: properties.populationDelta },
       'Population: ',
       population,
       ' ',
       React.createElement(Indicator, { value: population })
     ),
     React.createElement(
-      'div',
-      null,
+      Value,
+      { deltas: properties.favorabilityDelta, displayFn: displayPercent },
       'Favorability: ',
       displayPercent(favorability / 100),
       ' ',
@@ -1263,8 +1311,90 @@ function Faction(properties) {
   );
 }
 
+function Value(props) {
+  var deltas = props.deltas,
+      displayFn = props.displayFn;
+
+  var displayDeltas = [];
+  var total = 0;
+  for (var name in deltas) {
+    var val = deltas[name];
+    var color = 'black';
+    if (val < 0) color = 'red';
+    if (val > 0) color = 'green';
+    total += val;
+    displayDeltas.push(React.createElement(
+      'div',
+      { key: "delta_" + name },
+      name,
+      ': ',
+      React.createElement(
+        'span',
+        { style: { color: color } },
+        displayFn ? displayFn(val) : val
+      )
+    ));
+  }
+
+  var totalColor = 'black';
+  if (total < 0) totalColor = 'red';
+  if (total > 0) totalColor = 'green';
+
+  var hoverCard = null;
+  if (displayDeltas.length > 0) {
+    hoverCard = React.createElement(
+      'div',
+      {
+        className: 'hidden',
+        style: {
+          position: 'absolute',
+          top: 18,
+          left: 36,
+          zIndex: 5,
+          maxHeight: 500,
+          color: 'black',
+          whiteSpace: 'nowrap'
+        }
+      },
+      React.createElement(
+        InfoCard,
+        null,
+        displayDeltas,
+        React.createElement(Divider, null),
+        React.createElement(
+          'b',
+          null,
+          'Total:',
+          React.createElement(
+            'span',
+            { style: { color: totalColor } },
+            total > 0 ? '+' : '',
+            displayFn ? displayFn(total) : total
+          )
+        )
+      )
+    );
+  }
+
+  return React.createElement(
+    'div',
+    null,
+    React.createElement(
+      'span',
+      {
+        className: 'displayChildOnHover',
+        style: {
+          position: 'relative'
+        }
+      },
+      props.children,
+      hoverCard
+    )
+  );
+}
+
 module.exports = Game;
-},{"../config":2,"../systems/eventsSystem":8,"../systems/gameOverSystem":9,"../utils/display":14,"./Indicator.react":11,"./PolicyModal.react":13,"bens_ui_components":32,"react":46}],11:[function(require,module,exports){
+},{"../config":2,"../systems/eventsSystem":8,"../systems/gameOverSystem":9,"../utils/display":14,"./Indicator.react":11,"./PolicyModal.react":13,"bens_ui_components":33,"react":47}],11:[function(require,module,exports){
 'use strict';
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
@@ -1331,7 +1461,7 @@ var Indicator = function Indicator(props) {
 };
 
 module.exports = Indicator;
-},{"react":46}],12:[function(require,module,exports){
+},{"react":47}],12:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -1406,12 +1536,15 @@ function PlayModal(props) {
 }
 
 module.exports = Main;
-},{"./Game.react":10,"bens_ui_components":32,"react":46}],13:[function(require,module,exports){
+},{"./Game.react":10,"bens_ui_components":33,"react":47}],13:[function(require,module,exports){
 arguments[4][1][0].apply(exports,arguments)
-},{"../config":2,"../utils/display":14,"bens_ui_components":32,"dup":1,"react":46}],14:[function(require,module,exports){
+},{"../config":2,"../utils/display":14,"bens_ui_components":33,"dup":1,"react":47}],14:[function(require,module,exports){
 'use strict';
 
 var displayMoney = function displayMoney(money) {
+  if (money < 0) {
+    return '-$' + Number(Math.floor(Math.abs(money))).toLocaleString();
+  }
   if (money < 1000000) {
     return '$' + Number(Math.floor(money)).toLocaleString();
   } else {
@@ -1432,6 +1565,24 @@ module.exports = {
   displayPercent: displayPercent
 };
 },{}],15:[function(require,module,exports){
+'use strict';
+
+var initFactionDeltas = function initFactionDeltas(faction) {
+  for (var property in faction) {
+    if (typeof faction[property] != 'number') continue;
+    faction[property + 'Delta'] = {};
+  }
+  for (var _property in faction.props) {
+    if (typeof faction.props[_property] != 'number') continue;
+    faction.props[_property + 'Delta'] = {};
+  }
+  return faction;
+};
+
+module.exports = {
+  initFactionDeltas: initFactionDeltas
+};
+},{}],16:[function(require,module,exports){
 function _defineProperty(obj, key, value) {
   if (key in obj) {
     Object.defineProperty(obj, key, {
@@ -1448,7 +1599,7 @@ function _defineProperty(obj, key, value) {
 }
 
 module.exports = _defineProperty, module.exports.__esModule = true, module.exports["default"] = module.exports;
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 var defineProperty = require("./defineProperty.js");
 
 function ownKeys(object, enumerableOnly) {
@@ -1478,7 +1629,7 @@ function _objectSpread2(target) {
 }
 
 module.exports = _objectSpread2, module.exports.__esModule = true, module.exports["default"] = module.exports;
-},{"./defineProperty.js":15}],17:[function(require,module,exports){
+},{"./defineProperty.js":16}],18:[function(require,module,exports){
 'use strict';
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
@@ -1572,7 +1723,7 @@ var AudioWidget = function AudioWidget(props) {
 };
 
 module.exports = AudioWidget;
-},{"./Button.react":18,"react":46}],18:[function(require,module,exports){
+},{"./Button.react":19,"react":47}],19:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -1659,7 +1810,7 @@ function Button(props) {
 }
 
 module.exports = Button;
-},{"react":46}],19:[function(require,module,exports){
+},{"react":47}],20:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -1799,7 +1950,7 @@ function withPropsChecker(WrappedComponent) {
 }
 
 module.exports = React.memo(Canvas);
-},{"react":46}],20:[function(require,module,exports){
+},{"react":47}],21:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -1839,7 +1990,7 @@ function Checkbox(props) {
 }
 
 module.exports = Checkbox;
-},{"react":46}],21:[function(require,module,exports){
+},{"react":47}],22:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -1859,7 +2010,7 @@ function Divider(props) {
 }
 
 module.exports = Divider;
-},{"react":46}],22:[function(require,module,exports){
+},{"react":47}],23:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -1900,7 +2051,7 @@ var Dropdown = function Dropdown(props) {
 };
 
 module.exports = Dropdown;
-},{"react":46}],23:[function(require,module,exports){
+},{"react":47}],24:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -1931,7 +2082,7 @@ var InfoCard = function InfoCard(props) {
 };
 
 module.exports = InfoCard;
-},{"react":46}],24:[function(require,module,exports){
+},{"react":47}],25:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -2015,7 +2166,7 @@ function Modal(props) {
 }
 
 module.exports = Modal;
-},{"./Button.react":18,"bens_utils":39,"react":46}],25:[function(require,module,exports){
+},{"./Button.react":19,"bens_utils":40,"react":47}],26:[function(require,module,exports){
 'use strict';
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
@@ -2105,7 +2256,7 @@ var submitValue = function submitValue(onChange, nextVal, onlyInt) {
 };
 
 module.exports = NumberField;
-},{"react":46}],26:[function(require,module,exports){
+},{"react":47}],27:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -2472,7 +2623,7 @@ var PlotWatcher = function PlotWatcher(props) {
 };
 
 module.exports = PlotWatcher;
-},{"./Button.react":18,"./Canvas.react":19,"react":46}],27:[function(require,module,exports){
+},{"./Button.react":19,"./Canvas.react":20,"react":47}],28:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -2556,7 +2707,7 @@ var quitGameModal = function quitGameModal(dispatch) {
 };
 
 module.exports = QuitButton;
-},{"./Button.react":18,"./Modal.react":24,"bens_utils":39,"react":46}],28:[function(require,module,exports){
+},{"./Button.react":19,"./Modal.react":25,"bens_utils":40,"react":47}],29:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -2645,7 +2796,7 @@ var RadioPicker = function (_React$Component) {
 }(React.Component);
 
 module.exports = RadioPicker;
-},{"react":46}],29:[function(require,module,exports){
+},{"react":47}],30:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -2715,7 +2866,7 @@ function Slider(props) {
 }
 
 module.exports = Slider;
-},{"./NumberField.react":25,"react":46}],30:[function(require,module,exports){
+},{"./NumberField.react":26,"react":47}],31:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -3022,7 +3173,7 @@ function Table(props) {
 }
 
 module.exports = Table;
-},{"./Button.react":18,"./Dropdown.react":22,"react":46}],31:[function(require,module,exports){
+},{"./Button.react":19,"./Dropdown.react":23,"react":47}],32:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -3111,7 +3262,7 @@ var plotReducer = function plotReducer(state, action) {
 };
 
 module.exports = { plotReducer: plotReducer };
-},{}],32:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 
 module.exports = {
   AudioWidget: require('./bin/AudioWidget.react.js'),
@@ -3131,7 +3282,7 @@ module.exports = {
   Table: require('./bin/Table.react.js'),
 };
 
-},{"./bin/AudioWidget.react.js":17,"./bin/Button.react.js":18,"./bin/Canvas.react.js":19,"./bin/Checkbox.react.js":20,"./bin/Divider.react.js":21,"./bin/Dropdown.react.js":22,"./bin/InfoCard.react.js":23,"./bin/Modal.react.js":24,"./bin/NumberField.react.js":25,"./bin/Plot.react.js":26,"./bin/QuitButton.react.js":27,"./bin/RadioPicker.react.js":28,"./bin/Slider.react.js":29,"./bin/Table.react.js":30,"./bin/plotReducer.js":31}],33:[function(require,module,exports){
+},{"./bin/AudioWidget.react.js":18,"./bin/Button.react.js":19,"./bin/Canvas.react.js":20,"./bin/Checkbox.react.js":21,"./bin/Divider.react.js":22,"./bin/Dropdown.react.js":23,"./bin/InfoCard.react.js":24,"./bin/Modal.react.js":25,"./bin/NumberField.react.js":26,"./bin/Plot.react.js":27,"./bin/QuitButton.react.js":28,"./bin/RadioPicker.react.js":29,"./bin/Slider.react.js":30,"./bin/Table.react.js":31,"./bin/plotReducer.js":32}],34:[function(require,module,exports){
 'use strict';
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
@@ -3295,7 +3446,7 @@ module.exports = {
   getEntityPositions: getEntityPositions,
   entityInsideGrid: entityInsideGrid
 };
-},{"./helpers":34,"./math":35,"./vectors":38}],34:[function(require,module,exports){
+},{"./helpers":35,"./math":36,"./vectors":39}],35:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -3442,7 +3593,7 @@ module.exports = {
   deepCopy: deepCopy,
   throttle: throttle
 };
-},{"./vectors":38}],35:[function(require,module,exports){
+},{"./vectors":39}],36:[function(require,module,exports){
 "use strict";
 
 var clamp = function clamp(val, min, max) {
@@ -3487,7 +3638,7 @@ module.exports = {
   clamp: clamp,
   subtractWithDeficit: subtractWithDeficit
 };
-},{}],36:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 'use strict';
 
 function isIpad() {
@@ -3513,7 +3664,7 @@ module.exports = {
   isIpad: isIpad,
   isMobile: isMobile
 };
-},{}],37:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 "use strict";
 
 var floor = Math.floor,
@@ -3568,7 +3719,7 @@ module.exports = {
   oneOf: oneOf,
   weightedOneOf: weightedOneOf
 };
-},{}],38:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 "use strict";
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -3767,7 +3918,7 @@ module.exports = {
   rotate: rotate,
   abs: abs
 };
-},{}],39:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 
 module.exports = {
   vectors: require('./bin/vectors'),
@@ -3778,7 +3929,7 @@ module.exports = {
   math: require('./bin/math'),
 }
 
-},{"./bin/gridHelpers":33,"./bin/helpers":34,"./bin/math":35,"./bin/platform":36,"./bin/stochastic":37,"./bin/vectors":38}],40:[function(require,module,exports){
+},{"./bin/gridHelpers":34,"./bin/helpers":35,"./bin/math":36,"./bin/platform":37,"./bin/stochastic":38,"./bin/vectors":39}],41:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -3870,7 +4021,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 (function (process){(function (){
 /** @license React v17.0.2
  * react-dom.development.js
@@ -30136,7 +30287,7 @@ exports.version = ReactVersion;
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":54,"object-assign":40,"react":46,"scheduler":52,"scheduler/tracing":53}],42:[function(require,module,exports){
+},{"_process":55,"object-assign":41,"react":47,"scheduler":53,"scheduler/tracing":54}],43:[function(require,module,exports){
 /** @license React v17.0.2
  * react-dom.production.min.js
  *
@@ -30435,7 +30586,7 @@ exports.findDOMNode=function(a){if(null==a)return null;if(1===a.nodeType)return 
 exports.render=function(a,b,c){if(!rk(b))throw Error(y(200));return tk(null,a,b,!1,c)};exports.unmountComponentAtNode=function(a){if(!rk(a))throw Error(y(40));return a._reactRootContainer?(Xj(function(){tk(null,null,a,!1,function(){a._reactRootContainer=null;a[ff]=null})}),!0):!1};exports.unstable_batchedUpdates=Wj;exports.unstable_createPortal=function(a,b){return uk(a,b,2<arguments.length&&void 0!==arguments[2]?arguments[2]:null)};
 exports.unstable_renderSubtreeIntoContainer=function(a,b,c,d){if(!rk(c))throw Error(y(200));if(null==a||void 0===a._reactInternals)throw Error(y(38));return tk(a,b,c,!1,d)};exports.version="17.0.2";
 
-},{"object-assign":40,"react":46,"scheduler":52}],43:[function(require,module,exports){
+},{"object-assign":41,"react":47,"scheduler":53}],44:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -30477,7 +30628,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react-dom.development.js":41,"./cjs/react-dom.production.min.js":42,"_process":54}],44:[function(require,module,exports){
+},{"./cjs/react-dom.development.js":42,"./cjs/react-dom.production.min.js":43,"_process":55}],45:[function(require,module,exports){
 (function (process){(function (){
 /** @license React v17.0.2
  * react.development.js
@@ -32814,7 +32965,7 @@ exports.version = ReactVersion;
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":54,"object-assign":40}],45:[function(require,module,exports){
+},{"_process":55,"object-assign":41}],46:[function(require,module,exports){
 /** @license React v17.0.2
  * react.production.min.js
  *
@@ -32839,7 +32990,7 @@ key:d,ref:k,props:e,_owner:h}};exports.createContext=function(a,b){void 0===b&&(
 exports.lazy=function(a){return{$$typeof:v,_payload:{_status:-1,_result:a},_init:Q}};exports.memo=function(a,b){return{$$typeof:u,type:a,compare:void 0===b?null:b}};exports.useCallback=function(a,b){return S().useCallback(a,b)};exports.useContext=function(a,b){return S().useContext(a,b)};exports.useDebugValue=function(){};exports.useEffect=function(a,b){return S().useEffect(a,b)};exports.useImperativeHandle=function(a,b,c){return S().useImperativeHandle(a,b,c)};
 exports.useLayoutEffect=function(a,b){return S().useLayoutEffect(a,b)};exports.useMemo=function(a,b){return S().useMemo(a,b)};exports.useReducer=function(a,b,c){return S().useReducer(a,b,c)};exports.useRef=function(a){return S().useRef(a)};exports.useState=function(a){return S().useState(a)};exports.version="17.0.2";
 
-},{"object-assign":40}],46:[function(require,module,exports){
+},{"object-assign":41}],47:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -32850,7 +33001,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react.development.js":44,"./cjs/react.production.min.js":45,"_process":54}],47:[function(require,module,exports){
+},{"./cjs/react.development.js":45,"./cjs/react.production.min.js":46,"_process":55}],48:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -33551,7 +33702,7 @@ exports.compose = compose;
 exports.createStore = createStore;
 
 }).call(this)}).call(this,require('_process'))
-},{"@babel/runtime/helpers/objectSpread2":16,"_process":54}],48:[function(require,module,exports){
+},{"@babel/runtime/helpers/objectSpread2":17,"_process":55}],49:[function(require,module,exports){
 (function (process){(function (){
 /** @license React v0.20.2
  * scheduler-tracing.development.js
@@ -33902,7 +34053,7 @@ exports.unstable_wrap = unstable_wrap;
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":54}],49:[function(require,module,exports){
+},{"_process":55}],50:[function(require,module,exports){
 /** @license React v0.20.2
  * scheduler-tracing.production.min.js
  *
@@ -33913,7 +34064,7 @@ exports.unstable_wrap = unstable_wrap;
  */
 'use strict';var b=0;exports.__interactionsRef=null;exports.__subscriberRef=null;exports.unstable_clear=function(a){return a()};exports.unstable_getCurrent=function(){return null};exports.unstable_getThreadID=function(){return++b};exports.unstable_subscribe=function(){};exports.unstable_trace=function(a,d,c){return c()};exports.unstable_unsubscribe=function(){};exports.unstable_wrap=function(a){return a};
 
-},{}],50:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 (function (process){(function (){
 /** @license React v0.20.2
  * scheduler.development.js
@@ -34563,7 +34714,7 @@ exports.unstable_wrapCallback = unstable_wrapCallback;
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":54}],51:[function(require,module,exports){
+},{"_process":55}],52:[function(require,module,exports){
 /** @license React v0.20.2
  * scheduler.production.min.js
  *
@@ -34585,7 +34736,7 @@ exports.unstable_next=function(a){switch(P){case 1:case 2:case 3:var b=3;break;d
 exports.unstable_scheduleCallback=function(a,b,c){var d=exports.unstable_now();"object"===typeof c&&null!==c?(c=c.delay,c="number"===typeof c&&0<c?d+c:d):c=d;switch(a){case 1:var e=-1;break;case 2:e=250;break;case 5:e=1073741823;break;case 4:e=1E4;break;default:e=5E3}e=c+e;a={id:N++,callback:b,priorityLevel:a,startTime:c,expirationTime:e,sortIndex:-1};c>d?(a.sortIndex=c,H(M,a),null===J(L)&&a===J(M)&&(S?h():S=!0,g(U,c-d))):(a.sortIndex=e,H(L,a),R||Q||(R=!0,f(V)));return a};
 exports.unstable_wrapCallback=function(a){var b=P;return function(){var c=P;P=b;try{return a.apply(this,arguments)}finally{P=c}}};
 
-},{}],52:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -34596,7 +34747,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/scheduler.development.js":50,"./cjs/scheduler.production.min.js":51,"_process":54}],53:[function(require,module,exports){
+},{"./cjs/scheduler.development.js":51,"./cjs/scheduler.production.min.js":52,"_process":55}],54:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -34607,7 +34758,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/scheduler-tracing.development.js":48,"./cjs/scheduler-tracing.production.min.js":49,"_process":54}],54:[function(require,module,exports){
+},{"./cjs/scheduler-tracing.development.js":49,"./cjs/scheduler-tracing.production.min.js":50,"_process":55}],55:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
