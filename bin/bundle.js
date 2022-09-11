@@ -215,17 +215,17 @@ function PolicyModal(props) {
           }
         }
 
-        dispatch({ type: 'CHANGE_FAVORABILITY', factions: policy.support, amount: 5 });
+        dispatch({ type: 'CHANGE_FAVORABILITY', factions: policy.support, amount: 5, pass: true });
         // make opposition unhappy
-        dispatch({ type: 'CHANGE_FAVORABILITY', factions: policy.oppose, amount: -5 });
+        dispatch({ type: 'CHANGE_FAVORABILITY', factions: policy.oppose, amount: -5, pass: true });
         // clear policy
         dispatch({ type: 'SET', property: 'policy', value: null });
         dispatch({ type: 'DISMISS_MODAL' });
       } }, { label: 'Reject', onClick: function onClick() {
         // make opposition happy
-        dispatch({ type: 'CHANGE_FAVORABILITY', factions: policy.oppose, amount: 5 });
+        dispatch({ type: 'CHANGE_FAVORABILITY', factions: policy.oppose, amount: 5, pass: false });
         // make supporters unhappy
-        dispatch({ type: 'CHANGE_FAVORABILITY', factions: policy.support, amount: -5 });
+        dispatch({ type: 'CHANGE_FAVORABILITY', factions: policy.support, amount: -5, pass: false });
         // clear policy
         dispatch({ type: 'SET', property: 'policy', value: null });
         dispatch({ type: 'DISMISS_MODAL' });
@@ -315,7 +315,7 @@ var policies = [
 // Corporate Policies
 {
   name: 'Subsidize Corporations',
-  description: 'Business is bedrock of the economy so we need to give all the ' + 'support that we can afford.',
+  description: 'Business is the bedrock of the economy so we need to give all the ' + 'support that we can afford.',
   support: ['Corporations'],
   oppose: ['Middle Class', 'Working Class'],
   changes: [{
@@ -500,7 +500,8 @@ var gameReducer = function gameReducer(game, action) {
     case 'CHANGE_FAVORABILITY':
       {
         var factions = action.factions,
-            amount = action.amount;
+            amount = action.amount,
+            pass = action.pass;
         var _iteratorNormalCompletion = true;
         var _didIteratorError = false;
         var _iteratorError = undefined;
@@ -512,6 +513,15 @@ var gameReducer = function gameReducer(game, action) {
             var faction = game.factions[factionName];
             faction.favorability += amount;
             faction.favorability = clamp(faction.favorability, 0, 100);
+            if (pass && amount > 0) {
+              faction.favorabilityDelta['Preferred policy passed'] = amount / 100;
+            } else if (pass && amount < 0) {
+              faction.favorabilityDelta['Opposed policy passed'] = amount / 100;
+            } else if (!pass && amount > 0) {
+              faction.favorabilityDelta['Opposed policy rejected'] = amount / 100;
+            } else if (!pass && amount < 0) {
+              faction.favorabilityDelta['Preferred policy passed'] = amount / 100;
+            }
           }
         } catch (err) {
           _didIteratorError = true;

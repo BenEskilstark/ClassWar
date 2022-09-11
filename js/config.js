@@ -83,7 +83,7 @@ const policies = [
   // Corporate Policies
   {
     name: 'Subsidize Corporations',
-    description: 'Business is bedrock of the economy so we need to give all the ' +
+    description: 'Business is the bedrock of the economy so we need to give all the ' +
       'support that we can afford.',
     support: ['Corporations'],
     oppose: ['Middle Class', 'Working Class'],

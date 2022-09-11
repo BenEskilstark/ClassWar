@@ -37,11 +37,20 @@ const gameReducer = (game, action) => {
       return game;
     }
     case 'CHANGE_FAVORABILITY': {
-      const {factions, amount} = action;
+      const {factions, amount, pass} = action;
       for (const factionName of factions) {
         const faction = game.factions[factionName];
         faction.favorability += amount;
         faction.favorability = clamp(faction.favorability, 0, 100);
+        if (pass && amount > 0) {
+          faction.favorabilityDelta['Preferred policy passed'] = amount / 100;
+        } else if (pass && amount < 0) {
+          faction.favorabilityDelta['Opposed policy passed'] = amount / 100;
+        } else if (!pass && amount > 0) {
+          faction.favorabilityDelta['Opposed policy rejected'] = amount / 100;
+        } else if (!pass && amount < 0) {
+          faction.favorabilityDelta['Preferred policy passed'] = amount / 100;
+        }
       }
       return game;
     }

@@ -76,18 +76,18 @@ function PolicyModal(props): React.Node {
             dispatch({type: 'POLICY_CHANGE', change});
           }
           // make supporters happy
-          dispatch({type: 'CHANGE_FAVORABILITY', factions: policy.support, amount: 5});
+          dispatch({type: 'CHANGE_FAVORABILITY', factions: policy.support, amount: 5, pass: true});
           // make opposition unhappy
-          dispatch({type: 'CHANGE_FAVORABILITY', factions: policy.oppose, amount: -5});
+          dispatch({type: 'CHANGE_FAVORABILITY', factions: policy.oppose, amount: -5, pass: true});
           // clear policy
           dispatch({type: 'SET', property: 'policy', value: null});
           dispatch({type: 'DISMISS_MODAL'});
         }},
         {label: 'Reject', onClick: () => {
           // make opposition happy
-          dispatch({type: 'CHANGE_FAVORABILITY', factions: policy.oppose, amount: 5});
+          dispatch({type: 'CHANGE_FAVORABILITY', factions: policy.oppose, amount: 5, pass: false});
           // make supporters unhappy
-          dispatch({type: 'CHANGE_FAVORABILITY', factions: policy.support, amount: -5});
+          dispatch({type: 'CHANGE_FAVORABILITY', factions: policy.support, amount: -5, pass: false})
           // clear policy
           dispatch({type: 'SET', property: 'policy', value: null});
           dispatch({type: 'DISMISS_MODAL'});
