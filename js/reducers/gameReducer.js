@@ -21,14 +21,23 @@ const gameReducer = (game, action) => {
         const p = path[i];
         if (p == null) break; // don't apply change if it doesn't have a valid path
         if (i == path.length - 1) {
+          let delta = 0;
           if (operation == 'append' || operation == 'APPEND') {
             obj[p].push(value);
           } else if (operation == 'multiply' || operation == 'MULTIPLY') {
+            delta = obj[p] * value - obj[p];
             obj[p] *= value;
           } else if (operation == 'add' || operation == 'ADD') {
+            delta = value;
             obj[p] += value;
           } else {
+            delta = value - obj[p]
             obj[p] = value;
+          }
+
+          // apply delta too
+          if (obj[p + 'Delta']) {
+            obj[p + 'Delta']['Policy Change'] = delta;
           }
         }
         obj = obj[p];
