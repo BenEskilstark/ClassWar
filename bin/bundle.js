@@ -1190,6 +1190,7 @@ function Info(props) {
     {
       style: {
         width: 375,
+        height: 128,
         float: 'left',
         marginTop: 0,
         marginRight: 4
@@ -1286,63 +1287,73 @@ function Faction(properties) {
   }
 
   return React.createElement(
-    InfoCard,
+    'div',
     {
       style: {
-        width: 375
+        width: '33.3%',
+        display: 'inline-block'
       }
     },
     React.createElement(
-      'div',
-      null,
+      InfoCard,
+      {
+        style: {
+          width: '-webkit-fill-available',
+          padding: '2px'
+        }
+      },
       React.createElement(
-        'b',
+        'div',
         null,
-        name
-      )
-    ),
-    React.createElement(
-      Value,
-      { deltas: properties.wealthDelta, displayFn: displayMoney },
-      'Wealth: ',
-      displayMoney(wealth),
-      ' ',
-      React.createElement(Indicator, { value: wealth, minChange: 1 })
-    ),
-    React.createElement(
-      Value,
-      { deltas: properties.taxRateDelta, displayFn: displayPercent },
-      'Tax Rate: ',
-      displayPercent(taxRate),
-      ' ',
-      React.createElement(Indicator, { value: taxRate })
-    ),
-    React.createElement(
-      Value,
-      { deltas: properties.subsidyDelta, displayFn: displayMoney },
-      'Subsidy: ',
-      displayMoney(subsidy),
-      ' ',
-      React.createElement(Indicator, { value: subsidy, minChange: 1 })
-    ),
-    React.createElement(
-      Value,
-      { deltas: properties.populationDelta },
-      'Population: ',
-      population,
-      ' ',
-      React.createElement(Indicator, { value: population })
-    ),
-    React.createElement(
-      Value,
-      { deltas: properties.favorabilityDelta, displayFn: displayPercent },
-      'Favorability: ',
-      displayPercent(favorability / 100),
-      ' ',
-      React.createElement(Indicator, { value: favorability })
-    ),
-    React.createElement(Divider, null),
-    propList
+        React.createElement(
+          'b',
+          null,
+          name
+        )
+      ),
+      React.createElement(
+        Value,
+        { deltas: properties.wealthDelta, displayFn: displayMoney },
+        'Wealth: ',
+        displayMoney(wealth),
+        ' ',
+        React.createElement(Indicator, { value: wealth, minChange: 1 })
+      ),
+      React.createElement(
+        Value,
+        { deltas: properties.taxRateDelta, displayFn: displayPercent },
+        'Tax Rate: ',
+        displayPercent(taxRate),
+        ' ',
+        React.createElement(Indicator, { value: taxRate })
+      ),
+      React.createElement(
+        Value,
+        { deltas: properties.subsidyDelta, displayFn: displayMoney },
+        'Subsidy: ',
+        displayMoney(subsidy),
+        ' ',
+        React.createElement(Indicator, { value: subsidy, minChange: 1 })
+      ),
+      React.createElement(
+        Value,
+        { deltas: properties.populationDelta },
+        'Population: ',
+        population,
+        ' ',
+        React.createElement(Indicator, { value: population })
+      ),
+      React.createElement(
+        Value,
+        { deltas: properties.favorabilityDelta, displayFn: displayPercent },
+        'Favorability: ',
+        displayPercent(favorability / 100),
+        ' ',
+        React.createElement(Indicator, { value: favorability })
+      ),
+      React.createElement(Divider, null),
+      propList
+    )
   );
 }
 

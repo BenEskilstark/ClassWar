@@ -102,6 +102,7 @@ function Info(props): React.Node {
     <InfoCard
       style={{
         width: 375,
+        height: 128,
         float: 'left',
         marginTop: 0,
         marginRight: 4,
@@ -179,9 +180,16 @@ function Faction(properties): React.Node {
   }
 
   return (
+    <div
+      style={{
+        width: '33.3%',
+        display: 'inline-block',
+      }}
+    >
     <InfoCard
       style={{
-        width: 375,
+        width: '-webkit-fill-available',
+        padding: '2px',
       }}
     >
       <div><b>{name}</b></div>
@@ -203,6 +211,7 @@ function Faction(properties): React.Node {
       <Divider />
       {propList}
     </InfoCard>
+    </div>
   );
 }
 
