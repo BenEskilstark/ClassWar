@@ -7,8 +7,6 @@
 
 
 - - - - - - BUGS - - - - - -
-  - taxRate shows as V even after it hasn't changed for several turns
-    - because it's just not given a new value again
 
 
 - - - - - SIMULATION - - - - - -

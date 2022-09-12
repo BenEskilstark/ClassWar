@@ -1,6 +1,6 @@
 
 const React = require('react');
-const {useState, useMemo, useEffect, useReducer} = React;
+const {useState, useMemo, useEffect, useReducer, useRef} = React;
 
 
 /**
@@ -11,23 +11,10 @@ const {useState, useMemo, useEffect, useReducer} = React;
  */
 
 const Indicator = (props) => {
-  // track points with watching
-  const [indicator, dispatch] = useReducer(
-    (state, action) => {
-      const {value} = action;
-      return {
-        prev: state.value,
-        value,
-      };
-    },
-    {value: props.value, prev: props.value},
-  );
-  useEffect(() => {
-    dispatch({type: 'SET', value: props.value});
-  }, [props.value, dispatch]);
+  const prev = usePrevious(props.value);
 
   const minChange = props.minChange ? props.minChange : 0;
-  let change = indicator.value - indicator.prev;
+  let change = props.value - prev;
   let color = 'black';
   let symbol = '-';
   if (Math.abs(change) > minChange) {
@@ -51,6 +38,14 @@ const Indicator = (props) => {
       <b>{symbol}</b>
     </div>
   );
+}
+
+const usePrevious = (value) => {
+  const ref = useRef();
+  useEffect(() => {
+    ref.current = value;
+  });
+  return ref.current;
 }
 
 module.exports = Indicator;

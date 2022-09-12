@@ -1443,13 +1443,12 @@ module.exports = Game;
 },{"../config":2,"../systems/eventsSystem":8,"../systems/gameOverSystem":9,"../utils/display":14,"./Indicator.react":11,"./PolicyModal.react":13,"bens_ui_components":33,"react":47}],11:[function(require,module,exports){
 'use strict';
 
-var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
 var React = require('react');
 var useState = React.useState,
     useMemo = React.useMemo,
     useEffect = React.useEffect,
-    useReducer = React.useReducer;
+    useReducer = React.useReducer,
+    useRef = React.useRef;
 
 /**
  *
@@ -1459,25 +1458,10 @@ var useState = React.useState,
  */
 
 var Indicator = function Indicator(props) {
-  // track points with watching
-  var _useReducer = useReducer(function (state, action) {
-    var value = action.value;
-
-    return {
-      prev: state.value,
-      value: value
-    };
-  }, { value: props.value, prev: props.value }),
-      _useReducer2 = _slicedToArray(_useReducer, 2),
-      indicator = _useReducer2[0],
-      dispatch = _useReducer2[1];
-
-  useEffect(function () {
-    dispatch({ type: 'SET', value: props.value });
-  }, [props.value, dispatch]);
+  var prev = usePrevious(props.value);
 
   var minChange = props.minChange ? props.minChange : 0;
-  var change = indicator.value - indicator.prev;
+  var change = props.value - prev;
   var color = 'black';
   var symbol = '-';
   if (Math.abs(change) > minChange) {
@@ -1504,6 +1488,14 @@ var Indicator = function Indicator(props) {
       symbol
     )
   );
+};
+
+var usePrevious = function usePrevious(value) {
+  var ref = useRef();
+  useEffect(function () {
+    ref.current = value;
+  });
+  return ref.current;
 };
 
 module.exports = Indicator;
