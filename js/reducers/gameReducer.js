@@ -6,6 +6,11 @@ const {initFactionDeltas} = require('../utils/factionUtils');
 const {clamp, subtractWithDeficit} = require('bens_utils').math;
 const {randomIn, normalIn, oneOf, weightedOneOf} = require('bens_utils').stochastic;
 
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
+  'September', 'October', 'November', 'December',
+];
+
 const gameReducer = (game, action) => {
   switch (action.type) {
     case 'SET': {
@@ -90,6 +95,11 @@ const gameReducer = (game, action) => {
         game.ticksToNextPolicy = normalIn(4, 8);
       }
 
+      let months = game.time > 1 ? 'months' : 'month';
+      appendTicker(game,
+        '----- ' + MONTHS[(game.time-1 )% 12] + ': ' + game.time + ' ' + months + ' in power -----'
+      );
+
       // clear faction deltas
       for (const factionName in game.factions) {
         game.factions[factionName] = initFactionDeltas(game.factions[factionName]);
@@ -125,12 +135,24 @@ const gameReducer = (game, action) => {
         }
       }
 
+      // faction aliases
       const corps = game.factions['Corporations'];
       const mids = game.factions['Middle Class'];
       const poors = game.factions['Working Class'];
       // const nerds = game.factions['Intelligentsia'];
       // const army = game.factions['Military'];
       // const lords = game.factions['Landowners'];
+
+      // compute people hired by corporations
+      const nextMidsUnemployment = mids.props.unemployment * (1 -  corps.props.hiringRate);
+      mids.props.unemploymentDelta['Hired by Corporations'] =
+        nextMidsUnemployment - mids.props.unemployment;
+      mids.props.unemployment = nextMidsUnemployment;
+
+      const nextPoorsUnemployment = poors.props.unemployment * (1 -  corps.props.hiringRate);
+      poors.props.unemploymentDelta['Hired by Corporations'] =
+        nextPoorsUnemployment - poors.props.unemployment;
+      poors.props.unemployment = nextPoorsUnemployment;
 
       // compute payment to middle class (with tax)
       const employedMids = mids.population * (1 - mids.props.unemployment);

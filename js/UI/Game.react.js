@@ -160,7 +160,7 @@ function Faction(properties): React.Node {
     if (propName.slice(-5) == 'Delta') continue;
     let displayedVal = props[propName];
     let displayFn = (v) => v;
-    if (propName == 'unemployment') {
+    if (propName == 'unemployment' || propName == 'hiringRate') {
       displayedVal = displayPercent(props[propName]);
       displayFn = displayPercent;
     } else if (propName == 'wage' || propName == 'rent') {

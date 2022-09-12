@@ -281,6 +281,7 @@ var config = {
     population: val(50, 1, 100, true),
     favorability: val(50, 1, 100, true),
     props: {
+      hiringRate: 0.1,
       production: val(10, 1, 50, true) // value multiplier for each corp
     }
   }), _defineProperty(_factions, 'Middle Class', {
@@ -460,6 +461,8 @@ var _require$stochastic = require('bens_utils').stochastic,
     oneOf = _require$stochastic.oneOf,
     weightedOneOf = _require$stochastic.weightedOneOf;
 
+var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
 var gameReducer = function gameReducer(game, action) {
   switch (action.type) {
     case 'SET':
@@ -578,6 +581,9 @@ var gameReducer = function gameReducer(game, action) {
           game.ticksToNextPolicy = normalIn(4, 8);
         }
 
+        var months = game.time > 1 ? 'months' : 'month';
+        appendTicker(game, '----- ' + MONTHS[(game.time - 1) % 12] + ': ' + game.time + ' ' + months + ' in power -----');
+
         // clear faction deltas
         for (var _factionName in game.factions) {
           game.factions[_factionName] = initFactionDeltas(game.factions[_factionName]);
@@ -608,12 +614,22 @@ var gameReducer = function gameReducer(game, action) {
           }
         }
 
+        // faction aliases
         var corps = game.factions['Corporations'];
         var mids = game.factions['Middle Class'];
         var poors = game.factions['Working Class'];
         // const nerds = game.factions['Intelligentsia'];
         // const army = game.factions['Military'];
         // const lords = game.factions['Landowners'];
+
+        // compute people hired by corporations
+        var nextMidsUnemployment = mids.props.unemployment * (1 - corps.props.hiringRate);
+        mids.props.unemploymentDelta['Hired by Corporations'] = nextMidsUnemployment - mids.props.unemployment;
+        mids.props.unemployment = nextMidsUnemployment;
+
+        var nextPoorsUnemployment = poors.props.unemployment * (1 - corps.props.hiringRate);
+        poors.props.unemploymentDelta['Hired by Corporations'] = nextPoorsUnemployment - poors.props.unemployment;
+        poors.props.unemployment = nextPoorsUnemployment;
 
         // compute payment to middle class (with tax)
         var employedMids = mids.population * (1 - mids.props.unemployment);
@@ -1247,7 +1263,7 @@ function Faction(properties) {
     var displayFn = function displayFn(v) {
       return v;
     };
-    if (propName == 'unemployment') {
+    if (propName == 'unemployment' || propName == 'hiringRate') {
       displayedVal = displayPercent(props[propName]);
       displayFn = displayPercent;
     } else if (propName == 'wage' || propName == 'rent') {

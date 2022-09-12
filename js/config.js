@@ -38,6 +38,7 @@ const config = {
       population: val(50, 1, 100, true),
       favorability: val(50, 1, 100, true),
       props: {
+        hiringRate: 0.1,
         production: val(10, 1, 50, true), // value multiplier for each corp
       },
     },
