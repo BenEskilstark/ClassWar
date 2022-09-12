@@ -46,7 +46,6 @@
 
 
 - - - - - - UI - - - - - -
-  - allow hovercards to have height greater than parent card
   - get better display (e.g. %'s) for faction-specific props
   - colored indicator arrow component based off of Plot
     - get up and down arrows to look the same

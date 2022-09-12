@@ -50,7 +50,7 @@ function Game(props: Props): React.Node {
     <div>
       <div
         style={{
-          overflow: 'hidden',
+          // overflow: 'hidden', // messes up hovercards to have this
           width: '100%',
           marginBottom: 6,
         }}
@@ -103,7 +103,7 @@ function Info(props): React.Node {
       style={{
         width: 375,
         float: 'left',
-        marginTop: 4,
+        marginTop: 0,
         marginRight: 4,
       }}
     >
