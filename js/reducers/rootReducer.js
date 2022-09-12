@@ -74,6 +74,8 @@ const initGameState = () => {
     time: 0,
 
     policy: null,
+    policiesAccepted: [],
+    policiesRejected: [],
   };
 
   // deepCopy factions and init deltas for them

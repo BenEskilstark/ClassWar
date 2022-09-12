@@ -145,6 +145,37 @@ const policies = [
       return 100 - game.factions['Corporations'].favorability;
     },
   },
+  {
+    name: 'Lower Middle Class Wages',
+    description: "Workers don't deserve as much pay as they're getting, by lowering " +
+      "their wages we can focus on the important things -- business."
+    support: ['Corporations'],
+    oppose: ['Middle Class'],
+    changes: [{
+      path: ['factions', 'Middle Class', 'wages'],
+      operation: 'MULTIPLY',
+      value: 0.75,
+    }],
+    getWeight: (game) => {
+      return 100 - game.factions['Corporations'].favorability;
+    },
+  },
+  {
+    name: 'Lower Working Class Wages',
+    description: "Workers don't deserve as much pay as they're getting, by lowering " +
+      "their wages we can focus on the important things -- business."
+    support: ['Corporations'],
+    oppose: ['Working Class'],
+    changes: [{
+      path: ['factions', 'Working Class', 'wages'],
+      operation: 'MULTIPLY',
+      value: 0.75,
+    }],
+    getWeight: (game) => {
+      return 100 - game.factions['Corporations'].favorability;
+    },
+  },
+
 
   // Middle Class Policies
   {
@@ -162,6 +193,20 @@ const policies = [
       return 100 - game.factions['Middle Class'].favorability;
     },
   },
+  {
+    name: 'Raise Middle Class Wages',
+    description: "Skilled workers need to compensated fairly for their work",
+    support: ['Middle Class'],
+    oppose: ['Corporations'],
+    changes: [{
+      path: ['factions', 'Middle Class', 'wages'],
+      operation: 'MULTIPLY',
+      value: 1.25,
+    }],
+    getWeight: (game) => {
+      return 100 - game.factions['Middle Class'].favorability;
+    },
+  },
 
   // Working Class Policies
   {
@@ -173,6 +218,20 @@ const policies = [
       path: ['factions', 'Working Class', 'taxRate'],
       operation: 'MULTIPLY',
       value: 0.5,
+    }],
+    getWeight: (game) => {
+      return 100 - game.factions['Working Class'].favorability;
+    },
+  },
+  {
+    name: 'Raise Working Class Wages',
+    description: "All workers deserve a living wage",
+    support: ['Working Class'],
+    oppose: ['Corporations'],
+    changes: [{
+      path: ['factions', 'Working Class', 'wages'],
+      operation: 'ADD',
+      value: 3,
     }],
     getWeight: (game) => {
       return 100 - game.factions['Working Class'].favorability;

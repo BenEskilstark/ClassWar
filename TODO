@@ -15,6 +15,9 @@
       - poor -> strikes, then revolution
       - middle class -> strikes
       - corps -> reducing production, then leaving
+    - how to bounce back from 0% favorability ?
+      - 0% favorable factions propose radical policies
+        that they really want
     - bonuses for high favorability ?
       - poor -> ?
       - middle class -> greater skill
@@ -38,10 +41,7 @@
     - make it so randomized change values are different every time that policy comes up
     - maybe have a hard-coded smaller set of policies to choose from at first
     - procedurally generate policies?
-    - keep a history of all polices accepted and rejected
   - many policies (at least one per property)
-  - policy UI
-    - better lay out of the policy and percents/dollars
 
 
 - - - - - POLISH/FLAVOR - - - - -
@@ -53,6 +53,8 @@
 - - - - - - UI - - - - - -
   - colored indicator arrow component based off of Plot
     - get up and down arrows to look the same
+  - better printing of faction props
+  - better lay out of the policy UI and percents/dollars and buttons
 
 
 
