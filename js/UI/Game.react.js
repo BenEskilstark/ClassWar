@@ -164,7 +164,9 @@ function Faction(properties): React.Node {
     if (propName == 'unemployment' || propName == 'hiringRate') {
       displayedVal = displayPercent(props[propName]);
       displayFn = displayPercent;
-    } else if (propName == 'wage' || propName == 'rent') {
+    } else if (
+      propName == 'wage' || propName == 'rent' || propName == 'price'
+    ) {
       displayedVal = displayMoney(props[propName]);
       displayFn = displayMoney;
     }

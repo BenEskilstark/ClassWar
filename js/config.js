@@ -36,39 +36,40 @@ const config = {
       taxRate: val(0.2, 0, 0.5),
       subsidy: val(0, 0, 50000),
       population: val(50, 1, 100, true),
-      favorability: val(50, 1, 100, true),
+      favorability: val(75, 50, 100, true),
       props: {
         hiringRate: 0.1,
-        production: val(10, 1, 50, true), // value multiplier for each corp
+        inventory: 0,
+        price: val(5, 2, 10),
       },
     },
 
     ['Middle Class']: {
       name: 'Middle Class',
-      wealth: 50000,
+      wealth: 100000,
       taxRate: val(0.4, 0, 0.7),
       subsidy: val(0, 0, 5000),
       population: val(1000, 100, 10000),
-      favorability: val(50, 1, 100, true),
+      favorability: val(75, 50, 100, true),
       props: {
-        unemployment: val(0.1, 0, 0.8), // rate of not employed
+        unemployment: val(0.1, 0, 0.3), // rate of not employed
         wage: val(10, 2, 30, true), // wage going to each employed person
+        demand: val(2, 1, 5), // how much inventory each person wants
         skill: val(5, 1, 10), // how much more productive than working class each employed person is
-        consumerism: val(0.5, 0.1, 0.99), // how much wealth goes to buying things
       },
     },
 
     ['Working Class']: {
       name: 'Working Class',
-      wealth: val(0, 0, 10000),
+      wealth: val(10000, 10000, 50000),
       taxRate: val(0.3, 0, 0.7),
       subsidy: val(0, 0, 5000),
       population: val(10000, 1000, 50000),
-      favorability: val(50, 1, 100, true),
+      favorability: val(75, 50, 100, true),
       props: {
-        unemployment: val(0.1, 0, 0.9), // rate of not employed
+        unemployment: val(0.1, 0, 0.3), // rate of not employed
         wage: val(3, 1, 6), // wage going to each employed person
-        consumerism: val(0.9, 0.1, 0.99) // how much wealth goes to buying things
+        demand: 1, // how much inventory each person wants
       },
     },
 
@@ -148,7 +149,7 @@ const policies = [
   {
     name: 'Lower Middle Class Wages',
     description: "Workers don't deserve as much pay as they're getting, by lowering " +
-      "their wages we can focus on the important things -- business."
+      "their wages we can focus on the important things -- business.",
     support: ['Corporations'],
     oppose: ['Middle Class'],
     changes: [{
@@ -163,7 +164,7 @@ const policies = [
   {
     name: 'Lower Working Class Wages',
     description: "Workers don't deserve as much pay as they're getting, by lowering " +
-      "their wages we can focus on the important things -- business."
+      "their wages we can focus on the important things -- business.",
     support: ['Corporations'],
     oppose: ['Working Class'],
     changes: [{

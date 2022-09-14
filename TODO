@@ -7,6 +7,8 @@
 
 
 - - - - - - BUGS - - - - - -
+  - minimizing a policy rerenders which clears all the indicators
+  - working class inventory deficits can be way less than demand?
 
 
 - - - - - SIMULATION - - - - - -
@@ -25,13 +27,9 @@
   - add in additional factions
     - landowners, intelligentsia, army
     - maybe they appear later?
-      - start with landowners + working class
+      - start with landowners + working class?
   - construction:
-    - how to compute GDP
-      - exports/imports? what is the point?
-      - separate consumerism into demand + prices
-        where prices are a function of production/gdp and demand
-        is a function of consumerism + prices
+    - how to compute GDP - exports/imports? what is the point?
     - how does corp population fit in?
 
 
@@ -51,6 +49,7 @@
 
 
 - - - - - - UI - - - - - -
+  - make ticker scrollable
   - colored indicator arrow component based off of Plot
     - get up and down arrows to look the same
   - better printing of faction props

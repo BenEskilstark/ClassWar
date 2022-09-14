@@ -121,12 +121,12 @@ const gameReducer = (game, action) => {
         faction.wealthDelta['Government subsidy'] = subsidyPaid;
         // compute unfavorability if can't afford subsidy
         if (capitalDeficit != 0) {
-          appendTicker(game,
-            `Government is ${displayMoney(capitalDeficit)} short of subsidy for ${factionName}`,
-          );
           const favorabilityPenalty = Math.ceil(
             (capitalDeficit / faction.subsidy)
             * config.subsidyDeficitMult);
+          appendTicker(game,
+            `Government is ${displayMoney(capitalDeficit)} short of subsidy for ${factionName}`,
+          );
           appendTicker(game,
             `This is reducing their favorability for the government by ${displayPercent(favorabilityPenalty / 100)}`,
           );
@@ -177,10 +177,9 @@ const gameReducer = (game, action) => {
       // compute unemployement if corp can't pay
       if (corpWealthDeficit != 0) {
         appendTicker(game,
-          `Corporations are ${displayMoney(corpWealthDeficit)} short of wages for Middle Class`,
+          `Corporations are ${displayMoney(corpWealthDeficit)} short of wages for Middle Class.`+
+          ` They'll have to fire the rest.`
         );
-        appendTicker(game,
-          `They'll have to fire everyone they can't afford to pay`);
         const unemploymentDelta =
           (corpWealthDeficit / mids.props.wage) / mids.population;
         mids.props.unemployment += unemploymentDelta;
@@ -211,10 +210,9 @@ const gameReducer = (game, action) => {
       // compute unfavorability/unemployement if corp can't pay
       if (corpWealthDeficit2 != 0) {
         appendTicker(game,
-          `Corporations are ${displayMoney(corpWealthDeficit2)} short of wages for Working Class`,
+          `Corporations are ${displayMoney(corpWealthDeficit2)} short of wages for Working Class.`+
+          ` They'll have to fire the rest.`
         );
-        appendTicker(game,
-          `They'll have to fire everyone they can't afford to pay`);
         const unemploymentDelta =
           (corpWealthDeficit2 / poors.props.wage) / poors.population;
         poors.props.unemployment += unemploymentDelta;
@@ -222,17 +220,96 @@ const gameReducer = (game, action) => {
       }
 
       // compute production of goods (and gdp?)
-      let totalGoods = 0;
-      totalGoods += midsActuallyPaid * mids.props.skill * corps.props.production;
-      totalGoods += poorsActuallyPaid * corps.props.production;
+      let totalGoods = Math.round(midsActuallyPaid * mids.props.skill);
+      corps.props.inventory += totalGoods;
+      corps.props.inventoryDelta['Produced by Middle Class'] = totalGoods;
+      totalGoods = 0;
+      totalGoods += Math.round(poorsActuallyPaid);
+      corps.props.inventory += totalGoods;
+      corps.props.inventoryDelta['Produced by Working Class'] = totalGoods;
 
-      // compute purchase of goods (w/ tax)
-      const midSpend = mids.wealth * mids.props.consumerism;
+      // compute purchase of goods by Middle Class
+      const desiredMidSpend = mids.props.demand * mids.population * corps.props.price;
+      let {
+        // result: nextMidsWealth,
+        deficit: midsWealthDeficit,
+        amount: midPurchasingPower,
+      } = subtractWithDeficit(mids.wealth, desiredMidSpend, corps.props.price);
+      let {
+        result: nextInventory,
+        deficit: inventoryDeficit,
+        amount: inventoryBought,
+      } = subtractWithDeficit(corps.props.inventory, midPurchasingPower / corps.props.price);
+      if (inventoryDeficit != 0) { // not enough inventory
+        appendTicker(game,
+          `Corporations are ${inventoryDeficit} short of inventory for Middle Class demand`,
+        );
+        // const favorabilityDelta = Math.ceil(inventoryDeficit / mids.population * 5);
+        const favorabilityDelta = 2;
+        mids.favorability -= favorabilityDelta;
+        mids.favorabilityDelta['Not enough goods'] = -1 * favorabilityDelta / 100;
+      }
+      let midsWhoCantAfford = 0;
+      if (midsWealthDeficit != 0 && inventoryDeficit == 0) { // can't afford
+        midsWhoCantAfford = Math.round(
+          midsWealthDeficit / corps.props.price / mids.props.demand
+        );
+        appendTicker(game,
+          `The Middle Class is ${displayMoney(midsWealthDeficit)} short to afford goods. ` +
+          `${midsWhoCantAfford} have been pushed to the Working Class`
+        );
+        mids.population -= midsWhoCantAfford;
+        mids.populationDelta['Priced out of Middle Class'] = -1 * midsWhoCantAfford;
+      }
+      corps.props.inventory = nextInventory;
+      corps.props.inventoryDelta['Purchased by Middle Class'] = -1 * inventoryBought;
+      const midSpend = inventoryBought * corps.props.price;
       mids.wealth -= midSpend;
       mids.wealthDelta['Goods purchased'] = -1 * midSpend;
-      const poorSpend = poors.wealth * poors.props.consumerism;
+
+      // compute purchase of goods by Working Class
+      const desiredPoorSpend = poors.props.demand * poors.population * corps.props.price;
+      let {
+        // result: nextPoorsWealth,
+        deficit: poorsWealthDeficit,
+        amount: poorPurchasingPower,
+      } = subtractWithDeficit(poors.wealth, desiredPoorSpend, corps.props.price);
+      let {
+        result: nextInventory2,
+        deficit: inventoryDeficit2,
+        amount: inventoryBought2,
+      } = subtractWithDeficit(corps.props.inventory, poorPurchasingPower / corps.props.price);
+      if (inventoryDeficit2 != 0) { // not enough inventory
+        appendTicker(game,
+          `Corporations are ${inventoryDeficit2} short of inventory for Working Class demand`,
+        );
+        // const favorabilityDelta = Math.ceil(inventoryDeficit2 / poors.population * 5);
+        const favorabilityDelta = 2;
+        poors.favorability -= favorabilityDelta;
+        poors.favorabilityDelta['Not enough goods'] = -1 * favorabilityDelta / 100;
+      }
+      if (poorsWealthDeficit != 0 && inventoryDeficit2 == 0) { // can't afford
+        const poorsWhoCantAfford = Math.round(poorsWealthDeficit / corps.props.price);
+        appendTicker(game,
+          `The Working Class is ${displayMoney(poorsWealthDeficit)} short to afford goods. `
+          // + `${poorsWhoCantAfford} starved to death!`
+        );
+        const favorabilityDelta = 2;
+        poors.favorability -= favorabilityDelta;
+        poors.favorabilityDelta['Can\'t afford goods'] = -1 * favorabilityDelta / 100;
+      }
+      if (midsWhoCantAfford > 0) { // this happens here so that poors population
+                                   // doesn't increase before they start buying
+        poors.population += midsWhoCantAfford;
+        poors.populationDelta['Priced out of Middle Class'] = midsWhoCantAfford;
+      }
+      corps.props.inventory = nextInventory2;
+      corps.props.inventoryDelta['Purchased by Working Class'] = -1 * inventoryBought2;
+      const poorSpend = inventoryBought2 * corps.props.price;
       poors.wealth -= poorSpend;
       poors.wealthDelta['Goods purchased'] = -1 * poorSpend;
+
+      // corporate taxes
       const corpProfit = midSpend + poorSpend;
       const corpTaxesCollected = corpProfit * corps.taxRate;
       game.capital += corpTaxesCollected;
@@ -244,7 +321,9 @@ const gameReducer = (game, action) => {
       // compute favorability (gdp change, taxRate, wealth change, unemployment)
       for (const factionName in game.factions) {
         const faction = game.factions[factionName];
-        if (faction.wealth < prevWealth[factionName]) {
+        if (
+          faction.wealth < prevWealth[factionName] && faction.name == 'Corporations'
+        ) {
           faction.favorability -= 1;
           faction.favorabilityDelta['Wealth decreasing'] = -1/100;
         } else if (faction.wealth - prevWealth[factionName] > prevWealth[factionName] * 0.02) {
@@ -252,7 +331,8 @@ const gameReducer = (game, action) => {
           faction.favorabilityDelta['Wealth increasing'] = 1/100;
         }
         if (faction.props.unemployment > 0.1) {
-          const favorabilityDelta = Math.floor(faction.props.unemployment * 5);
+          // const favorabilityDelta = Math.floor(faction.props.unemployment * 5);
+          const favorabilityDelta = 1;
           faction.favorability -= favorabilityDelta;
           faction.favorabilityDelta['High unemployment'] = -1 * favorabilityDelta / 100;
         }

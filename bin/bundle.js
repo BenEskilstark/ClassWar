@@ -289,35 +289,36 @@ var config = {
     taxRate: val(0.2, 0, 0.5),
     subsidy: val(0, 0, 50000),
     population: val(50, 1, 100, true),
-    favorability: val(50, 1, 100, true),
+    favorability: val(75, 50, 100, true),
     props: {
       hiringRate: 0.1,
-      production: val(10, 1, 50, true) // value multiplier for each corp
+      inventory: 0,
+      price: val(5, 2, 10)
     }
   }), _defineProperty(_factions, 'Middle Class', {
     name: 'Middle Class',
-    wealth: 50000,
+    wealth: 100000,
     taxRate: val(0.4, 0, 0.7),
     subsidy: val(0, 0, 5000),
     population: val(1000, 100, 10000),
-    favorability: val(50, 1, 100, true),
+    favorability: val(75, 50, 100, true),
     props: {
-      unemployment: val(0.1, 0, 0.8), // rate of not employed
+      unemployment: val(0.1, 0, 0.3), // rate of not employed
       wage: val(10, 2, 30, true), // wage going to each employed person
-      skill: val(5, 1, 10), // how much more productive than working class each employed person is
-      consumerism: val(0.5, 0.1, 0.99) // how much wealth goes to buying things
+      demand: val(2, 1, 5), // how much inventory each person wants
+      skill: val(5, 1, 10) // how much more productive than working class each employed person is
     }
   }), _defineProperty(_factions, 'Working Class', {
     name: 'Working Class',
-    wealth: val(0, 0, 10000),
+    wealth: val(10000, 10000, 50000),
     taxRate: val(0.3, 0, 0.7),
     subsidy: val(0, 0, 5000),
     population: val(10000, 1000, 50000),
-    favorability: val(50, 1, 100, true),
+    favorability: val(75, 50, 100, true),
     props: {
-      unemployment: val(0.1, 0, 0.9), // rate of not employed
+      unemployment: val(0.1, 0, 0.3), // rate of not employed
       wage: val(3, 1, 6), // wage going to each employed person
-      consumerism: val(0.9, 0.1, 0.99) // how much wealth goes to buying things
+      demand: 1 // how much inventory each person wants
     }
   }), _factions)
 };
@@ -379,6 +380,32 @@ var policies = [
     // TODO: could be more likely when capital is going down
     return 100 - game.factions['Corporations'].favorability;
   }
+}, {
+  name: 'Lower Middle Class Wages',
+  description: "Workers don't deserve as much pay as they're getting, by lowering " + "their wages we can focus on the important things -- business.",
+  support: ['Corporations'],
+  oppose: ['Middle Class'],
+  changes: [{
+    path: ['factions', 'Middle Class', 'wages'],
+    operation: 'MULTIPLY',
+    value: 0.75
+  }],
+  getWeight: function getWeight(game) {
+    return 100 - game.factions['Corporations'].favorability;
+  }
+}, {
+  name: 'Lower Working Class Wages',
+  description: "Workers don't deserve as much pay as they're getting, by lowering " + "their wages we can focus on the important things -- business.",
+  support: ['Corporations'],
+  oppose: ['Working Class'],
+  changes: [{
+    path: ['factions', 'Working Class', 'wages'],
+    operation: 'MULTIPLY',
+    value: 0.75
+  }],
+  getWeight: function getWeight(game) {
+    return 100 - game.factions['Corporations'].favorability;
+  }
 },
 
 // Middle Class Policies
@@ -395,6 +422,19 @@ var policies = [
   getWeight: function getWeight(game) {
     return 100 - game.factions['Middle Class'].favorability;
   }
+}, {
+  name: 'Raise Middle Class Wages',
+  description: "Skilled workers need to compensated fairly for their work",
+  support: ['Middle Class'],
+  oppose: ['Corporations'],
+  changes: [{
+    path: ['factions', 'Middle Class', 'wages'],
+    operation: 'MULTIPLY',
+    value: 1.25
+  }],
+  getWeight: function getWeight(game) {
+    return 100 - game.factions['Middle Class'].favorability;
+  }
 },
 
 // Working Class Policies
@@ -407,6 +447,19 @@ var policies = [
     path: ['factions', 'Working Class', 'taxRate'],
     operation: 'MULTIPLY',
     value: 0.5
+  }],
+  getWeight: function getWeight(game) {
+    return 100 - game.factions['Working Class'].favorability;
+  }
+}, {
+  name: 'Raise Working Class Wages',
+  description: "All workers deserve a living wage",
+  support: ['Working Class'],
+  oppose: ['Corporations'],
+  changes: [{
+    path: ['factions', 'Working Class', 'wages'],
+    operation: 'ADD',
+    value: 3
   }],
   getWeight: function getWeight(game) {
     return 100 - game.factions['Working Class'].favorability;
@@ -616,8 +669,8 @@ var gameReducer = function gameReducer(game, action) {
           _faction.wealthDelta['Government subsidy'] = subsidyPaid;
           // compute unfavorability if can't afford subsidy
           if (capitalDeficit != 0) {
-            appendTicker(game, 'Government is ' + displayMoney(capitalDeficit) + ' short of subsidy for ' + _factionName2);
             var favorabilityPenalty = Math.ceil(capitalDeficit / _faction.subsidy * config.subsidyDeficitMult);
+            appendTicker(game, 'Government is ' + displayMoney(capitalDeficit) + ' short of subsidy for ' + _factionName2);
             appendTicker(game, 'This is reducing their favorability for the government by ' + displayPercent(favorabilityPenalty / 100));
             _faction.favorability = clamp(_faction.favorability - favorabilityPenalty, 0, 100);
             _faction.favorabilityDelta['Unpaid subsidy'] = favorabilityPenalty;
@@ -662,8 +715,7 @@ var gameReducer = function gameReducer(game, action) {
         corps.wealthDelta['Middle Class wages paid'] = -1 * midsWagesPaid;
         // compute unemployement if corp can't pay
         if (corpWealthDeficit != 0) {
-          appendTicker(game, 'Corporations are ' + displayMoney(corpWealthDeficit) + ' short of wages for Middle Class');
-          appendTicker(game, 'They\'ll have to fire everyone they can\'t afford to pay');
+          appendTicker(game, 'Corporations are ' + displayMoney(corpWealthDeficit) + ' short of wages for Middle Class.' + ' They\'ll have to fire the rest.');
           var unemploymentDelta = corpWealthDeficit / mids.props.wage / mids.population;
           mids.props.unemployment += unemploymentDelta;
           mids.props.unemploymentDelta['Unpaid workers'] = unemploymentDelta;
@@ -690,25 +742,98 @@ var gameReducer = function gameReducer(game, action) {
         corps.wealthDelta['Working Class wages paid'] = -1 * poorsWagesPaid;
         // compute unfavorability/unemployement if corp can't pay
         if (corpWealthDeficit2 != 0) {
-          appendTicker(game, 'Corporations are ' + displayMoney(corpWealthDeficit2) + ' short of wages for Working Class');
-          appendTicker(game, 'They\'ll have to fire everyone they can\'t afford to pay');
+          appendTicker(game, 'Corporations are ' + displayMoney(corpWealthDeficit2) + ' short of wages for Working Class.' + ' They\'ll have to fire the rest.');
           var _unemploymentDelta = corpWealthDeficit2 / poors.props.wage / poors.population;
           poors.props.unemployment += _unemploymentDelta;
           poors.props.unemploymentDelta['Unpaid workers'] = _unemploymentDelta;
         }
 
         // compute production of goods (and gdp?)
-        var totalGoods = 0;
-        totalGoods += midsActuallyPaid * mids.props.skill * corps.props.production;
-        totalGoods += poorsActuallyPaid * corps.props.production;
+        var totalGoods = Math.round(midsActuallyPaid * mids.props.skill);
+        corps.props.inventory += totalGoods;
+        corps.props.inventoryDelta['Produced by Middle Class'] = totalGoods;
+        totalGoods = 0;
+        totalGoods += Math.round(poorsActuallyPaid);
+        corps.props.inventory += totalGoods;
+        corps.props.inventoryDelta['Produced by Working Class'] = totalGoods;
 
-        // compute purchase of goods (w/ tax)
-        var midSpend = mids.wealth * mids.props.consumerism;
+        // compute purchase of goods by Middle Class
+        var desiredMidSpend = mids.props.demand * mids.population * corps.props.price;
+
+        var _subtractWithDeficit4 = subtractWithDeficit(mids.wealth, desiredMidSpend, corps.props.price),
+            midsWealthDeficit = _subtractWithDeficit4.deficit,
+            midPurchasingPower = _subtractWithDeficit4.amount;
+
+        var _subtractWithDeficit5 = subtractWithDeficit(corps.props.inventory, midPurchasingPower / corps.props.price),
+            nextInventory = _subtractWithDeficit5.result,
+            inventoryDeficit = _subtractWithDeficit5.deficit,
+            inventoryBought = _subtractWithDeficit5.amount;
+
+        if (inventoryDeficit != 0) {
+          // not enough inventory
+          appendTicker(game, 'Corporations are ' + inventoryDeficit + ' short of inventory for Middle Class demand');
+          // const favorabilityDelta = Math.ceil(inventoryDeficit / mids.population * 5);
+          var favorabilityDelta = 2;
+          mids.favorability -= favorabilityDelta;
+          mids.favorabilityDelta['Not enough goods'] = -1 * favorabilityDelta / 100;
+        }
+        var midsWhoCantAfford = 0;
+        if (midsWealthDeficit != 0 && inventoryDeficit == 0) {
+          // can't afford
+          midsWhoCantAfford = Math.round(midsWealthDeficit / corps.props.price / mids.props.demand);
+          appendTicker(game, 'The Middle Class is ' + displayMoney(midsWealthDeficit) + ' short to afford goods. ' + (midsWhoCantAfford + ' have been pushed to the Working Class'));
+          mids.population -= midsWhoCantAfford;
+          mids.populationDelta['Priced out of Middle Class'] = -1 * midsWhoCantAfford;
+        }
+        corps.props.inventory = nextInventory;
+        corps.props.inventoryDelta['Purchased by Middle Class'] = -1 * inventoryBought;
+        var midSpend = inventoryBought * corps.props.price;
         mids.wealth -= midSpend;
         mids.wealthDelta['Goods purchased'] = -1 * midSpend;
-        var poorSpend = poors.wealth * poors.props.consumerism;
+
+        // compute purchase of goods by Working Class
+        var desiredPoorSpend = poors.props.demand * poors.population * corps.props.price;
+
+        var _subtractWithDeficit6 = subtractWithDeficit(poors.wealth, desiredPoorSpend, corps.props.price),
+            poorsWealthDeficit = _subtractWithDeficit6.deficit,
+            poorPurchasingPower = _subtractWithDeficit6.amount;
+
+        var _subtractWithDeficit7 = subtractWithDeficit(corps.props.inventory, poorPurchasingPower / corps.props.price),
+            nextInventory2 = _subtractWithDeficit7.result,
+            inventoryDeficit2 = _subtractWithDeficit7.deficit,
+            inventoryBought2 = _subtractWithDeficit7.amount;
+
+        if (inventoryDeficit2 != 0) {
+          // not enough inventory
+          appendTicker(game, 'Corporations are ' + inventoryDeficit2 + ' short of inventory for Working Class demand');
+          // const favorabilityDelta = Math.ceil(inventoryDeficit2 / poors.population * 5);
+          var _favorabilityDelta = 2;
+          poors.favorability -= _favorabilityDelta;
+          poors.favorabilityDelta['Not enough goods'] = -1 * _favorabilityDelta / 100;
+        }
+        if (poorsWealthDeficit != 0 && inventoryDeficit2 == 0) {
+          // can't afford
+          var poorsWhoCantAfford = Math.round(poorsWealthDeficit / corps.props.price);
+          appendTicker(game, 'The Working Class is ' + displayMoney(poorsWealthDeficit) + ' short to afford goods. '
+          // + `${poorsWhoCantAfford} starved to death!`
+          );
+          var _favorabilityDelta2 = 2;
+          poors.favorability -= _favorabilityDelta2;
+          poors.favorabilityDelta['Can\'t afford goods'] = -1 * _favorabilityDelta2 / 100;
+        }
+        if (midsWhoCantAfford > 0) {
+          // this happens here so that poors population
+          // doesn't increase before they start buying
+          poors.population += midsWhoCantAfford;
+          poors.populationDelta['Priced out of Middle Class'] = midsWhoCantAfford;
+        }
+        corps.props.inventory = nextInventory2;
+        corps.props.inventoryDelta['Purchased by Working Class'] = -1 * inventoryBought2;
+        var poorSpend = inventoryBought2 * corps.props.price;
         poors.wealth -= poorSpend;
         poors.wealthDelta['Goods purchased'] = -1 * poorSpend;
+
+        // corporate taxes
         var corpProfit = midSpend + poorSpend;
         var corpTaxesCollected = corpProfit * corps.taxRate;
         game.capital += corpTaxesCollected;
@@ -720,7 +845,7 @@ var gameReducer = function gameReducer(game, action) {
         // compute favorability (gdp change, taxRate, wealth change, unemployment)
         for (var _factionName3 in game.factions) {
           var _faction2 = game.factions[_factionName3];
-          if (_faction2.wealth < prevWealth[_factionName3]) {
+          if (_faction2.wealth < prevWealth[_factionName3] && _faction2.name == 'Corporations') {
             _faction2.favorability -= 1;
             _faction2.favorabilityDelta['Wealth decreasing'] = -1 / 100;
           } else if (_faction2.wealth - prevWealth[_factionName3] > prevWealth[_factionName3] * 0.02) {
@@ -728,9 +853,10 @@ var gameReducer = function gameReducer(game, action) {
             _faction2.favorabilityDelta['Wealth increasing'] = 1 / 100;
           }
           if (_faction2.props.unemployment > 0.1) {
-            var favorabilityDelta = Math.floor(_faction2.props.unemployment * 5);
-            _faction2.favorability -= favorabilityDelta;
-            _faction2.favorabilityDelta['High unemployment'] = -1 * favorabilityDelta / 100;
+            // const favorabilityDelta = Math.floor(faction.props.unemployment * 5);
+            var _favorabilityDelta3 = 1;
+            _faction2.favorability -= _favorabilityDelta3;
+            _faction2.favorabilityDelta['High unemployment'] = -1 * _favorabilityDelta3 / 100;
           }
           _faction2.favorability = clamp(_faction2.favorability, 0, 100);
         }
@@ -1279,7 +1405,7 @@ function Faction(properties) {
     if (propName == 'unemployment' || propName == 'hiringRate') {
       displayedVal = displayPercent(props[propName]);
       displayFn = displayPercent;
-    } else if (propName == 'wage' || propName == 'rent') {
+    } else if (propName == 'wage' || propName == 'rent' || propName == 'price') {
       displayedVal = displayMoney(props[propName]);
       displayFn = displayMoney;
     }
