@@ -24,6 +24,7 @@ function PolicyModal(props): React.Node {
     let path = '';
     for (const prop of change.path) {
       if (prop == 'factions') continue;
+      if (prop == 'props') continue;
       path += prop + ' ';
     }
     prettifiedChanges.push(

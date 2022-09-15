@@ -1,14 +1,17 @@
 
 - - - - - PLAYTEST - - - - - -
   - 10x all money values to give a little more leeway
-  - add government type to main info based on favorability
-    (and wealth? or history of favorable policies)
-  - configure mid/working classes to have inelastic demand for some goods
+  - more policies that are random big monetary handouts
+  - strike-breaker policies that punish low-favorability
 
 
 - - - - - - BUGS - - - - - -
   - minimizing a policy rerenders which clears all the indicators
   - working class inventory deficits can be way less than demand?
+  - one-time cash handouts need to check that the gov can afford
+  - need dicts for money/percents
+    - in policy_change, in policy display, in game ui
+    - specifically favorability
 
 
 - - - - - SIMULATION - - - - - -
@@ -49,6 +52,8 @@
 
 
 - - - - - - UI - - - - - -
+  - add government type to main info based on favorability
+    (and wealth? or history of favorable policies)
   - make ticker scrollable
   - colored indicator arrow component based off of Plot
     - get up and down arrows to look the same

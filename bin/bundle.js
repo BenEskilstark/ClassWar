@@ -52,6 +52,7 @@ function PolicyModal(props) {
           var prop = _step5.value;
 
           if (prop == 'factions') continue;
+          if (prop == 'props') continue;
           path += prop + ' ';
         }
       } catch (err) {
@@ -278,43 +279,43 @@ var config = {
   msPerTick: 1000,
   maxTickerLength: 7,
 
-  capital: 1000000,
+  capital: 2000000,
 
   subsidyDeficitMult: 5,
   wagesDeficitMult: 5,
 
   factions: (_factions = {}, _defineProperty(_factions, 'Corporations', {
     name: 'Corporations',
-    wealth: 100000,
+    wealth: 1000000,
     taxRate: val(0.2, 0, 0.5),
-    subsidy: val(0, 0, 50000),
+    subsidy: val(0, 10000, 50000),
     population: val(50, 1, 100, true),
-    favorability: val(75, 50, 100, true),
+    favorability: 50,
     props: {
       hiringRate: 0.1,
-      inventory: 0,
-      price: val(5, 2, 10)
+      inventory: 20000,
+      price: val(5, 2, 7)
     }
   }), _defineProperty(_factions, 'Middle Class', {
     name: 'Middle Class',
-    wealth: 100000,
-    taxRate: val(0.4, 0, 0.7),
-    subsidy: val(0, 0, 5000),
+    wealth: 500000,
+    taxRate: val(0.4, 0, 0.4),
+    subsidy: val(0, 5000, 15000),
     population: val(1000, 100, 10000),
-    favorability: val(75, 50, 100, true),
+    favorability: 50,
     props: {
       unemployment: val(0.1, 0, 0.3), // rate of not employed
       wage: val(10, 2, 30, true), // wage going to each employed person
       demand: val(2, 1, 5), // how much inventory each person wants
-      skill: val(5, 1, 10) // how much more productive than working class each employed person is
+      skill: val(5, 3, 10) // how much more productive than working class each employed person is
     }
   }), _defineProperty(_factions, 'Working Class', {
     name: 'Working Class',
-    wealth: val(10000, 10000, 50000),
-    taxRate: val(0.3, 0, 0.7),
-    subsidy: val(0, 0, 5000),
+    wealth: 250000,
+    taxRate: val(0.3, 0, 0.4),
+    subsidy: val(0, 0, 10000),
     population: val(10000, 1000, 50000),
-    favorability: val(75, 50, 100, true),
+    favorability: 50,
     props: {
       unemployment: val(0.1, 0, 0.3), // rate of not employed
       wage: val(3, 1, 6), // wage going to each employed person
@@ -386,7 +387,7 @@ var policies = [
   support: ['Corporations'],
   oppose: ['Middle Class'],
   changes: [{
-    path: ['factions', 'Middle Class', 'wages'],
+    path: ['factions', 'Middle Class', 'props', 'wage'],
     operation: 'MULTIPLY',
     value: 0.75
   }],
@@ -399,12 +400,46 @@ var policies = [
   support: ['Corporations'],
   oppose: ['Working Class'],
   changes: [{
-    path: ['factions', 'Working Class', 'wages'],
+    path: ['factions', 'Working Class', 'props', 'wage'],
     operation: 'MULTIPLY',
     value: 0.75
   }],
   getWeight: function getWeight(game) {
     return 100 - game.factions['Corporations'].favorability;
+  }
+}, {
+  name: "Corporate Restructuring",
+  isRadical: true,
+  description: "We need radical solutions to save the Corporations",
+  support: ['Corporations'],
+  oppose: ['Working Class', 'Middle Class'],
+  changes: [{
+    path: ['factions', 'Corporations', 'wealth'],
+    operation: 'ADD',
+    value: 1000000
+  }, {
+    path: ['capital'],
+    operation: 'ADD',
+    value: -1000000
+  }, {
+    path: ['factions', 'Corporations', 'taxRate'],
+    operation: 'Multiply',
+    value: 0.1
+  }, {
+    path: ['factions', 'Corporations', 'props', 'price'],
+    operation: 'MULTIPLY',
+    value: 2
+  }, {
+    path: ['factions', 'Corporations', 'favorability'],
+    operation: 'ADD',
+    value: 20
+  }],
+  getWeight: function getWeight(game) {
+    if (game.factions['Corporations'].favorability > 0) {
+      return 1;
+    } else {
+      return 1000;
+    }
   }
 },
 
@@ -428,12 +463,50 @@ var policies = [
   support: ['Middle Class'],
   oppose: ['Corporations'],
   changes: [{
-    path: ['factions', 'Middle Class', 'wages'],
+    path: ['factions', 'Middle Class', 'props', 'wage'],
     operation: 'MULTIPLY',
     value: 1.25
   }],
   getWeight: function getWeight(game) {
     return 100 - game.factions['Middle Class'].favorability;
+  }
+}, {
+  name: "Save the Middle Class",
+  isRadical: true,
+  description: "We need radical solutions to get the Middle Class back on track",
+  support: ['Middle Class'],
+  oppose: ['Corporations', 'Working Class'],
+  changes: [{
+    path: ['factions', 'Middle Class', 'wealth'],
+    operation: 'ADD',
+    value: 200000
+  }, {
+    path: ['capital'],
+    operation: 'ADD',
+    value: -200000
+  }, {
+    path: ['factions', 'Middle Class', 'taxRate'],
+    operation: 'Multiply',
+    value: 0.1
+  }, {
+    path: ['factions', 'Working Class', 'props', 'wage'],
+    operation: 'ADD',
+    value: 2
+  }, {
+    path: ['factions', 'Middle Class', 'props', 'unemployment'],
+    operation: 'MULTIPLY',
+    value: 0.1
+  }, {
+    path: ['factions', 'Middle Class', 'favorability'],
+    operation: 'ADD',
+    value: 20
+  }],
+  getWeight: function getWeight(game) {
+    if (game.factions['Middle Class'].favorability > 0) {
+      return 1;
+    } else {
+      return 1000;
+    }
   }
 },
 
@@ -457,12 +530,46 @@ var policies = [
   support: ['Working Class'],
   oppose: ['Corporations'],
   changes: [{
-    path: ['factions', 'Working Class', 'wages'],
+    path: ['factions', 'Working Class', 'props', 'wage'],
     operation: 'ADD',
     value: 3
   }],
   getWeight: function getWeight(game) {
     return 100 - game.factions['Working Class'].favorability;
+  }
+}, {
+  name: "Worker's Rights Overhaul",
+  isRadical: true,
+  description: "We need radical solutions to get the Working Class back on track",
+  support: ['Working Class'],
+  oppose: ['Corporations'],
+  changes: [{
+    path: ['factions', 'Working Class', 'wealth'],
+    operation: 'ADD',
+    value: 100000
+  }, {
+    path: ['capital'],
+    operation: 'ADD',
+    value: -100000
+  }, {
+    path: ['factions', 'Working Class', 'props', 'wage'],
+    operation: 'ADD',
+    value: 5
+  }, {
+    path: ['factions', 'Working Class', 'props', 'unemployment'],
+    operation: 'MULTIPLY',
+    value: 0.1
+  }, {
+    path: ['factions', 'Working Class', 'favorability'],
+    operation: 'ADD',
+    value: 20
+  }],
+  getWeight: function getWeight(game) {
+    if (game.factions['Working Class'].favorability > 0) {
+      return 1;
+    } else {
+      return 10000;
+    }
   }
 }];
 
@@ -560,6 +667,9 @@ var gameReducer = function gameReducer(game, action) {
             } else {
               delta = _value - obj[p];
               obj[p] = _value;
+            }
+            if (p == 'favorability') {
+              delta /= 100;
             }
 
             // apply delta too
@@ -684,6 +794,7 @@ var gameReducer = function gameReducer(game, action) {
         // const nerds = game.factions['Intelligentsia'];
         // const army = game.factions['Military'];
         // const lords = game.factions['Landowners'];
+
 
         // compute people hired by corporations
         var nextMidsUnemployment = mids.props.unemployment * (1 - corps.props.hiringRate);
@@ -845,7 +956,7 @@ var gameReducer = function gameReducer(game, action) {
         // compute favorability (gdp change, taxRate, wealth change, unemployment)
         for (var _factionName3 in game.factions) {
           var _faction2 = game.factions[_factionName3];
-          if (_faction2.wealth < prevWealth[_factionName3] && _faction2.name == 'Corporations') {
+          if (_faction2.wealth < prevWealth[_factionName3] || _faction2.wealth < 10) {
             _faction2.favorability -= 1;
             _faction2.favorabilityDelta['Wealth decreasing'] = -1 / 100;
           } else if (_faction2.wealth - prevWealth[_factionName3] > prevWealth[_factionName3] * 0.02) {
@@ -860,6 +971,9 @@ var gameReducer = function gameReducer(game, action) {
           }
           _faction2.favorability = clamp(_faction2.favorability, 0, 100);
         }
+
+        //
+
 
         // middle/lower class
         // compute favorability (unemployment, wealth, taxRate)

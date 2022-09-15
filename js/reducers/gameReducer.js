@@ -39,6 +39,9 @@ const gameReducer = (game, action) => {
             delta = value - obj[p]
             obj[p] = value;
           }
+          if (p == 'favorability') {
+            delta /= 100;
+          }
 
           // apply delta too
           if (obj[p + 'Delta']) {
@@ -105,6 +108,7 @@ const gameReducer = (game, action) => {
         game.factions[factionName] = initFactionDeltas(game.factions[factionName]);
       }
 
+
       // subsidies (for every faction)
       let prevWealth = {}; // starting wealth for every faction
       for (const factionName in game.factions) {
@@ -135,6 +139,7 @@ const gameReducer = (game, action) => {
         }
       }
 
+
       // faction aliases
       const corps = game.factions['Corporations'];
       const mids = game.factions['Middle Class'];
@@ -142,6 +147,7 @@ const gameReducer = (game, action) => {
       // const nerds = game.factions['Intelligentsia'];
       // const army = game.factions['Military'];
       // const lords = game.factions['Landowners'];
+
 
       // compute people hired by corporations
       const nextMidsUnemployment = mids.props.unemployment * (1 -  corps.props.hiringRate);
@@ -153,6 +159,7 @@ const gameReducer = (game, action) => {
       poors.props.unemploymentDelta['Hired by Corporations'] =
         nextPoorsUnemployment - poors.props.unemployment;
       poors.props.unemployment = nextPoorsUnemployment;
+
 
       // compute payment to middle class (with tax)
       const employedMids = mids.population * (1 - mids.props.unemployment);
@@ -219,6 +226,7 @@ const gameReducer = (game, action) => {
         poors.props.unemploymentDelta['Unpaid workers'] = unemploymentDelta;
       }
 
+
       // compute production of goods (and gdp?)
       let totalGoods = Math.round(midsActuallyPaid * mids.props.skill);
       corps.props.inventory += totalGoods;
@@ -227,6 +235,7 @@ const gameReducer = (game, action) => {
       totalGoods += Math.round(poorsActuallyPaid);
       corps.props.inventory += totalGoods;
       corps.props.inventoryDelta['Produced by Working Class'] = totalGoods;
+
 
       // compute purchase of goods by Middle Class
       const desiredMidSpend = mids.props.demand * mids.population * corps.props.price;
@@ -266,6 +275,7 @@ const gameReducer = (game, action) => {
       const midSpend = inventoryBought * corps.props.price;
       mids.wealth -= midSpend;
       mids.wealthDelta['Goods purchased'] = -1 * midSpend;
+
 
       // compute purchase of goods by Working Class
       const desiredPoorSpend = poors.props.demand * poors.population * corps.props.price;
@@ -309,6 +319,7 @@ const gameReducer = (game, action) => {
       poors.wealth -= poorSpend;
       poors.wealthDelta['Goods purchased'] = -1 * poorSpend;
 
+
       // corporate taxes
       const corpProfit = midSpend + poorSpend;
       const corpTaxesCollected = corpProfit * corps.taxRate;
@@ -318,11 +329,12 @@ const gameReducer = (game, action) => {
       corps.wealthDelta['Business profits'] = corpProfit;
       corps.wealthDelta['Taxes paid'] = -1 * corpTaxesCollected;
 
+
       // compute favorability (gdp change, taxRate, wealth change, unemployment)
       for (const factionName in game.factions) {
         const faction = game.factions[factionName];
         if (
-          faction.wealth < prevWealth[factionName] && faction.name == 'Corporations'
+          faction.wealth < prevWealth[factionName] || faction.wealth < 10
         ) {
           faction.favorability -= 1;
           faction.favorabilityDelta['Wealth decreasing'] = -1/100;
@@ -338,6 +350,9 @@ const gameReducer = (game, action) => {
         }
         faction.favorability = clamp(faction.favorability, 0, 100);
       }
+
+      //
+
 
       // middle/lower class
       // compute favorability (unemployment, wealth, taxRate)
