@@ -55,7 +55,7 @@ const config = {
         unemployment: val(0.1, 0, 0.3), // rate of not employed
         wage: val(10, 2, 30, true), // wage going to each employed person
         demand: val(2, 1, 5), // how much inventory each person wants
-        skill: val(5, 3, 10), // how much more productive than working class each employed person is
+        skill: val(5, 3, 10), // how much more productive than working class employed person is
       },
     },
 
@@ -92,7 +92,7 @@ const policies = [
     changes: [{
       path: ['factions', 'Corporations', 'subsidy'],
       operation: 'ADD',
-      value: 10000,
+      value: 25000,
     }],
     useOnce: false,
     getWeight: (game) => {
@@ -177,7 +177,23 @@ const policies = [
     },
   },
   {
-    name: "Corporate Restructuring",
+    name: 'Corporate Handout',
+    description: 'Business is the bedrock of the economy so we need to give all the ' +
+      'support that we can afford.',
+    support: ['Corporations'],
+    oppose: ['Middle Class', 'Working Class'],
+    changes: [{
+      path: ['factions', 'Corporations', 'wealth'],
+      operation: 'ADD',
+      value: 250000,
+    }],
+    useOnce: false,
+    getWeight: (game) => {
+      return 100 - game.factions['Corporations'].favorability;
+    },
+  },
+  {
+    name: "Corporate Bailout",
     isRadical: true,
     description: "We need radical solutions to save the Corporations",
     support: ['Corporations'],
@@ -195,7 +211,7 @@ const policies = [
       },
       {
         path: ['factions', 'Corporations', 'taxRate'],
-        operation: 'Multiply',
+        operation: 'MULTIPLY',
         value: 0.1,
       },
       {
@@ -236,6 +252,38 @@ const policies = [
     },
   },
   {
+    name: 'Subsidize Middle Class',
+    description: 'The Middle Class is the bedrock of the economy so we need to give all the ' +
+      'support that we can afford.',
+    support: ['Middle Class'],
+    oppose: ['Corporations', 'Working Class'],
+    changes: [{
+      path: ['factions', 'Middle Class', 'subsidy'],
+      operation: 'ADD',
+      value: 15000,
+    }],
+    useOnce: false,
+    getWeight: (game) => {
+      return 100 - game.factions['Middle Class'].favorability;
+    },
+  },
+  {
+    name: 'Middle Class Relief Checks',
+    description: 'The Middle Class is the bedrock of the economy so we need to give all the ' +
+      'support that we can afford.',
+    support: ['Middle Class'],
+    oppose: ['Corporations', 'Working Class'],
+    changes: [{
+      path: ['factions', 'Middle Class', 'wealth'],
+      operation: 'ADD',
+      value: 100000,
+    }],
+    useOnce: false,
+    getWeight: (game) => {
+      return 100 - game.factions['Middle Class'].favorability;
+    },
+  },
+  {
     name: 'Raise Middle Class Wages',
     description: "Skilled workers need to be compensated fairly for their work",
     support: ['Middle Class'],
@@ -268,7 +316,7 @@ const policies = [
       },
       {
         path: ['factions', 'Middle Class', 'taxRate'],
-        operation: 'Multiply',
+        operation: 'MULTIPLY',
         value: 0.1,
       },
       {
@@ -327,6 +375,38 @@ const policies = [
     },
   },
   {
+    name: 'Subsidize Working Class',
+    description: 'The Working Class is the bedrock of the economy so we need to give all the ' +
+      'support that we can afford.',
+    support: ['Working Class'],
+    oppose: ['Corporations', 'Middle Class'],
+    changes: [{
+      path: ['factions', 'Working Class', 'subsidy'],
+      operation: 'ADD',
+      value: 15000,
+    }],
+    useOnce: false,
+    getWeight: (game) => {
+      return 100 - game.factions['Working Class'].favorability;
+    },
+  },
+  {
+    name: 'Working Class Relief Checks',
+    description: 'The Working Class is the bedrock of the economy so we need to give all the ' +
+      'support that we can afford.',
+    support: ['Working Class'],
+    oppose: ['Corporations', 'Middle Class'],
+    changes: [{
+      path: ['factions', 'Working Class', 'wealth'],
+      operation: 'ADD',
+      value: 100000,
+    }],
+    useOnce: false,
+    getWeight: (game) => {
+      return 100 - game.factions['Working Class'].favorability;
+    },
+  },
+  {
     name: "Worker's Rights Overhaul",
     isRadical: true,
     description: "We need radical solutions to get the Working Class back on track",
@@ -362,6 +442,36 @@ const policies = [
     getWeight: (game) => {
       if (game.factions['Working Class'].favorability > 0) {
         return 1;
+      } else {
+        return 10000;
+      }
+    },
+  },
+  {
+    name: "Break the Strike!",
+    isRadical: true,
+    description: "We need radical solutions to get the Working Class back on track",
+    support: ['Corporations', 'Middle Class'],
+    oppose: ['Working Class'],
+    changes: [
+      {
+        path: ['factions', 'Working Class', 'population'],
+        operation: 'MULTIPLY',
+        value: 0.7,
+      },
+      {
+        path: ['factions', 'Working Class', 'props', 'unemployment'],
+        value: 0,
+      },
+      {
+        path: ['factions', 'Working Class', 'favorability'],
+        operation: 'ADD',
+        value: 15,
+      },
+    ],
+    getWeight: (game) => {
+      if (game.factions['Working Class'].favorability > 0) {
+        return 0;
       } else {
         return 10000;
       }

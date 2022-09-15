@@ -37,14 +37,17 @@ function Game(props: Props): React.Node {
     initEventsSystem(store);
   }, []);
 
-  const factions = [];
-  for (const factionName in game.factions) {
-    const faction = game.factions[factionName];
-    factions.push(<Faction
-      key={'faction_' + factionName}
-      {...faction}
-    />);
-  }
+  const factions = useMemo(() => {
+    const factions = [];
+    for (const factionName in game.factions) {
+      const faction = game.factions[factionName];
+      factions.push(<Faction
+        key={'faction_' + factionName}
+        {...faction}
+      />);
+    }
+    return factions;
+  }, [game.time, game.policy != null]);
 
   return (
     <div>
@@ -86,7 +89,7 @@ function Ticker(props): React.Node {
         padding: 4,
         marginTop: 4,
         marginRight: 4,
-        overflow: 'hidden',
+        overflow: 'scroll',
         display: 'block',
       }}
     >

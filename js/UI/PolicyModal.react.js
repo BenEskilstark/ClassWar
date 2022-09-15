@@ -88,6 +88,7 @@ function PolicyModal(props): React.Node {
             change: {path: ['policiesAccepted'], value: policy, operation: 'APPEND',},
           });
           dispatch({type: 'DISMISS_MODAL'});
+          dispatch({type: 'APPEND_TICKER', message: 'Passed Policy: ' + policy.name});
         }},
         {label: 'Reject', onClick: () => {
           // make opposition happy
@@ -102,6 +103,7 @@ function PolicyModal(props): React.Node {
           // clear policy
           dispatch({type: 'SET', property: 'policy', value: null});
           dispatch({type: 'DISMISS_MODAL'});
+          dispatch({type: 'APPEND_TICKER', message: 'Rejected Policy: ' + policy.name});
         }}
       ]}
     />

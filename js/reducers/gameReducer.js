@@ -66,7 +66,7 @@ const gameReducer = (game, action) => {
         } else if (!pass && amount > 0) {
           faction.favorabilityDelta['Opposed policy rejected'] = amount / 100;
         } else if (!pass && amount < 0) {
-          faction.favorabilityDelta['Preferred policy passed'] = amount / 100;
+          faction.favorabilityDelta['Preferred policy rejected'] = amount / 100;
         }
       }
       return game;
@@ -95,7 +95,7 @@ const gameReducer = (game, action) => {
       game.time += 1;
       game.ticksToNextPolicy--;
       if (game.ticksToNextPolicy == -1) {
-        game.ticksToNextPolicy = normalIn(4, 8);
+        game.ticksToNextPolicy = normalIn(3, 6);
       }
 
       let months = game.time > 1 ? 'months' : 'month';
@@ -107,6 +107,7 @@ const gameReducer = (game, action) => {
       for (const factionName in game.factions) {
         game.factions[factionName] = initFactionDeltas(game.factions[factionName]);
       }
+      game.capitalDelta = {};
 
 
       // subsidies (for every faction)
@@ -135,7 +136,7 @@ const gameReducer = (game, action) => {
             `This is reducing their favorability for the government by ${displayPercent(favorabilityPenalty / 100)}`,
           );
           faction.favorability = clamp(faction.favorability - favorabilityPenalty, 0, 100);
-          faction.favorabilityDelta['Unpaid subsidy'] = favorabilityPenalty;
+          faction.favorabilityDelta['Unpaid subsidy'] = -1 * favorabilityPenalty / 100;
         }
       }
 
@@ -384,9 +385,9 @@ const gameReducer = (game, action) => {
 
 function appendTicker(game, message) {
     game.ticker.push(message);
-    if (game.ticker.length > config.maxTickerLength) {
-      game.ticker.shift();
-    }
+    // if (game.ticker.length > config.maxTickerLength) {
+    //   game.ticker.shift();
+    // }
 }
 
 

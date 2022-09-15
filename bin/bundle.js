@@ -227,6 +227,7 @@ function PolicyModal(props) {
           change: { path: ['policiesAccepted'], value: policy, operation: 'APPEND' }
         });
         dispatch({ type: 'DISMISS_MODAL' });
+        dispatch({ type: 'APPEND_TICKER', message: 'Passed Policy: ' + policy.name });
       } }, { label: 'Reject', onClick: function onClick() {
         // make opposition happy
         dispatch({ type: 'CHANGE_FAVORABILITY', factions: policy.oppose, amount: 5, pass: false });
@@ -240,6 +241,7 @@ function PolicyModal(props) {
         // clear policy
         dispatch({ type: 'SET', property: 'policy', value: null });
         dispatch({ type: 'DISMISS_MODAL' });
+        dispatch({ type: 'APPEND_TICKER', message: 'Rejected Policy: ' + policy.name });
       } }]
   });
 }
@@ -293,7 +295,7 @@ var config = {
     favorability: 50,
     props: {
       hiringRate: 0.1,
-      inventory: 20000,
+      inventory: 25000,
       price: val(5, 2, 7)
     }
   }), _defineProperty(_factions, 'Middle Class', {
@@ -307,11 +309,11 @@ var config = {
       unemployment: val(0.1, 0, 0.3), // rate of not employed
       wage: val(10, 2, 30, true), // wage going to each employed person
       demand: val(2, 1, 5), // how much inventory each person wants
-      skill: val(5, 3, 10) // how much more productive than working class each employed person is
+      skill: val(5, 3, 10) // how much more productive than working class employed person is
     }
   }), _defineProperty(_factions, 'Working Class', {
     name: 'Working Class',
-    wealth: 250000,
+    wealth: 500000,
     taxRate: val(0.3, 0, 0.4),
     subsidy: val(0, 0, 10000),
     population: val(10000, 1000, 50000),
@@ -334,7 +336,7 @@ var policies = [
   changes: [{
     path: ['factions', 'Corporations', 'subsidy'],
     operation: 'ADD',
-    value: 10000
+    value: 25000
   }],
   useOnce: false,
   getWeight: function getWeight(game) {
@@ -408,7 +410,21 @@ var policies = [
     return 100 - game.factions['Corporations'].favorability;
   }
 }, {
-  name: "Corporate Restructuring",
+  name: 'Corporate Handout',
+  description: 'Business is the bedrock of the economy so we need to give all the ' + 'support that we can afford.',
+  support: ['Corporations'],
+  oppose: ['Middle Class', 'Working Class'],
+  changes: [{
+    path: ['factions', 'Corporations', 'wealth'],
+    operation: 'ADD',
+    value: 250000
+  }],
+  useOnce: false,
+  getWeight: function getWeight(game) {
+    return 100 - game.factions['Corporations'].favorability;
+  }
+}, {
+  name: "Corporate Bailout",
   isRadical: true,
   description: "We need radical solutions to save the Corporations",
   support: ['Corporations'],
@@ -423,7 +439,7 @@ var policies = [
     value: -1000000
   }, {
     path: ['factions', 'Corporations', 'taxRate'],
-    operation: 'Multiply',
+    operation: 'MULTIPLY',
     value: 0.1
   }, {
     path: ['factions', 'Corporations', 'props', 'price'],
@@ -458,8 +474,36 @@ var policies = [
     return 100 - game.factions['Middle Class'].favorability;
   }
 }, {
+  name: 'Subsidize Middle Class',
+  description: 'The Middle Class is the bedrock of the economy so we need to give all the ' + 'support that we can afford.',
+  support: ['Middle Class'],
+  oppose: ['Corporations', 'Working Class'],
+  changes: [{
+    path: ['factions', 'Middle Class', 'subsidy'],
+    operation: 'ADD',
+    value: 15000
+  }],
+  useOnce: false,
+  getWeight: function getWeight(game) {
+    return 100 - game.factions['Middle Class'].favorability;
+  }
+}, {
+  name: 'Middle Class Relief Checks',
+  description: 'The Middle Class is the bedrock of the economy so we need to give all the ' + 'support that we can afford.',
+  support: ['Middle Class'],
+  oppose: ['Corporations', 'Working Class'],
+  changes: [{
+    path: ['factions', 'Middle Class', 'wealth'],
+    operation: 'ADD',
+    value: 100000
+  }],
+  useOnce: false,
+  getWeight: function getWeight(game) {
+    return 100 - game.factions['Middle Class'].favorability;
+  }
+}, {
   name: 'Raise Middle Class Wages',
-  description: "Skilled workers need to compensated fairly for their work",
+  description: "Skilled workers need to be compensated fairly for their work",
   support: ['Middle Class'],
   oppose: ['Corporations'],
   changes: [{
@@ -486,7 +530,7 @@ var policies = [
     value: -200000
   }, {
     path: ['factions', 'Middle Class', 'taxRate'],
-    operation: 'Multiply',
+    operation: 'MULTIPLY',
     value: 0.1
   }, {
     path: ['factions', 'Working Class', 'props', 'wage'],
@@ -538,6 +582,34 @@ var policies = [
     return 100 - game.factions['Working Class'].favorability;
   }
 }, {
+  name: 'Subsidize Working Class',
+  description: 'The Working Class is the bedrock of the economy so we need to give all the ' + 'support that we can afford.',
+  support: ['Working Class'],
+  oppose: ['Corporations', 'Middle Class'],
+  changes: [{
+    path: ['factions', 'Working Class', 'subsidy'],
+    operation: 'ADD',
+    value: 15000
+  }],
+  useOnce: false,
+  getWeight: function getWeight(game) {
+    return 100 - game.factions['Working Class'].favorability;
+  }
+}, {
+  name: 'Working Class Relief Checks',
+  description: 'The Working Class is the bedrock of the economy so we need to give all the ' + 'support that we can afford.',
+  support: ['Working Class'],
+  oppose: ['Corporations', 'Middle Class'],
+  changes: [{
+    path: ['factions', 'Working Class', 'wealth'],
+    operation: 'ADD',
+    value: 100000
+  }],
+  useOnce: false,
+  getWeight: function getWeight(game) {
+    return 100 - game.factions['Working Class'].favorability;
+  }
+}, {
   name: "Worker's Rights Overhaul",
   isRadical: true,
   description: "We need radical solutions to get the Working Class back on track",
@@ -567,6 +639,31 @@ var policies = [
   getWeight: function getWeight(game) {
     if (game.factions['Working Class'].favorability > 0) {
       return 1;
+    } else {
+      return 10000;
+    }
+  }
+}, {
+  name: "Break the Strike!",
+  isRadical: true,
+  description: "We need radical solutions to get the Working Class back on track",
+  support: ['Corporations', 'Middle Class'],
+  oppose: ['Working Class'],
+  changes: [{
+    path: ['factions', 'Working Class', 'population'],
+    operation: 'MULTIPLY',
+    value: 0.7
+  }, {
+    path: ['factions', 'Working Class', 'props', 'unemployment'],
+    value: 0
+  }, {
+    path: ['factions', 'Working Class', 'favorability'],
+    operation: 'ADD',
+    value: 15
+  }],
+  getWeight: function getWeight(game) {
+    if (game.factions['Working Class'].favorability > 0) {
+      return 0;
     } else {
       return 10000;
     }
@@ -705,7 +802,7 @@ var gameReducer = function gameReducer(game, action) {
             } else if (!pass && amount > 0) {
               faction.favorabilityDelta['Opposed policy rejected'] = amount / 100;
             } else if (!pass && amount < 0) {
-              faction.favorabilityDelta['Preferred policy passed'] = amount / 100;
+              faction.favorabilityDelta['Preferred policy rejected'] = amount / 100;
             }
           }
         } catch (err) {
@@ -751,7 +848,7 @@ var gameReducer = function gameReducer(game, action) {
         game.time += 1;
         game.ticksToNextPolicy--;
         if (game.ticksToNextPolicy == -1) {
-          game.ticksToNextPolicy = normalIn(4, 8);
+          game.ticksToNextPolicy = normalIn(3, 6);
         }
 
         var months = game.time > 1 ? 'months' : 'month';
@@ -761,6 +858,7 @@ var gameReducer = function gameReducer(game, action) {
         for (var _factionName in game.factions) {
           game.factions[_factionName] = initFactionDeltas(game.factions[_factionName]);
         }
+        game.capitalDelta = {};
 
         // subsidies (for every faction)
         var prevWealth = {}; // starting wealth for every faction
@@ -783,7 +881,7 @@ var gameReducer = function gameReducer(game, action) {
             appendTicker(game, 'Government is ' + displayMoney(capitalDeficit) + ' short of subsidy for ' + _factionName2);
             appendTicker(game, 'This is reducing their favorability for the government by ' + displayPercent(favorabilityPenalty / 100));
             _faction.favorability = clamp(_faction.favorability - favorabilityPenalty, 0, 100);
-            _faction.favorabilityDelta['Unpaid subsidy'] = favorabilityPenalty;
+            _faction.favorabilityDelta['Unpaid subsidy'] = -1 * favorabilityPenalty / 100;
           }
         }
 
@@ -1008,9 +1106,9 @@ var gameReducer = function gameReducer(game, action) {
 
 function appendTicker(game, message) {
   game.ticker.push(message);
-  if (game.ticker.length > config.maxTickerLength) {
-    game.ticker.shift();
-  }
+  // if (game.ticker.length > config.maxTickerLength) {
+  //   game.ticker.shift();
+  // }
 }
 
 module.exports = { gameReducer: gameReducer };
@@ -1374,13 +1472,16 @@ function Game(props) {
     initEventsSystem(store);
   }, []);
 
-  var factions = [];
-  for (var factionName in game.factions) {
-    var faction = game.factions[factionName];
-    factions.push(React.createElement(Faction, _extends({
-      key: 'faction_' + factionName
-    }, faction)));
-  }
+  var factions = useMemo(function () {
+    var factions = [];
+    for (var factionName in game.factions) {
+      var faction = game.factions[factionName];
+      factions.push(React.createElement(Faction, _extends({
+        key: 'faction_' + factionName
+      }, faction)));
+    }
+    return factions;
+  }, [game.time, game.policy != null]);
 
   return React.createElement(
     'div',
@@ -1424,7 +1525,7 @@ function Ticker(props) {
         padding: 4,
         marginTop: 4,
         marginRight: 4,
-        overflow: 'hidden',
+        overflow: 'scroll',
         display: 'block'
       }
     },

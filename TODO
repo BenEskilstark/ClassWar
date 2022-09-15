@@ -1,12 +1,15 @@
 
 - - - - - PLAYTEST - - - - - -
-  - 10x all money values to give a little more leeway
   - more policies that are random big monetary handouts
   - strike-breaker policies that punish low-favorability
+  - policies for increasing capital when it's low
+  - if middle class demand > skill then inventory will never be enough
 
 
 - - - - - - BUGS - - - - - -
-  - minimizing a policy rerenders which clears all the indicators
+  - make ticker auto-scroll with appending
+  - auto-playing ticks still hides indicators when policy pops up
+  - keep population/inventory/etc rounded
   - working class inventory deficits can be way less than demand?
   - one-time cash handouts need to check that the gov can afford
   - need dicts for money/percents
@@ -49,12 +52,14 @@
   - print out a few messages at the start with instructions
     - welcome dear leader ... hopefully you can last longer than the last one
     - but try to incorporate name of the game in there
+  - ticker
+    - make ticker scrollable
+    - months in power should be years + months (weeks?)
 
 
 - - - - - - UI - - - - - -
   - add government type to main info based on favorability
     (and wealth? or history of favorable policies)
-  - make ticker scrollable
   - colored indicator arrow component based off of Plot
     - get up and down arrows to look the same
   - better printing of faction props
