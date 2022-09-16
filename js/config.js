@@ -129,7 +129,7 @@ const policies = [
     name: 'Reduce Corporate Subsidies',
     description: 'We must stop the corporate handouts and keep the money for more important ' +
       'societal projects.',
-    support: ['Working Class'],
+    support: ['Intelligentsia'],
     oppose: ['Corporations'],
     changes: (game) => {
       return [{
@@ -150,7 +150,7 @@ const policies = [
     name: 'Raise Middle Class Tax Rate',
     description: "To balance the budget, we'll have to ask for a fairer share from " +
       "the more privileged among us.",
-    support: ['Corporations'],
+    support: ['Corporations', 'Landowners'],
     oppose: ['Middle Class'],
     changes: (game) => {
       return [{
@@ -171,7 +171,7 @@ const policies = [
     name: 'Raise Working Class Tax Rate',
     description: "In these times of austerity, everyone must chip in to keep " +
       "society afloat.",
-    support: ['Corporations'],
+    support: ['Corporations', 'Landowners'],
     oppose: ['Working Class'],
     changes: (game) => {
       return [{
@@ -192,7 +192,7 @@ const policies = [
     name: 'Raise Corporate Tax Rate',
     description: "To balance the budget, we'll have to ask for a fairer share from " +
       "the richest among us",
-    support: ['Working Class', 'Middle Class'],
+    support: ['Intelligentsia', 'Working Class', 'Middle Class'],
     oppose: ['Corporations'],
     changes: (game) => {
       return [{
@@ -209,6 +209,27 @@ const policies = [
       return mult * (100 - game.factions['Middle Class'].favorability);
     },
   },
+  {
+    name: 'Raise Landowners Tax Rate',
+    description: "To balance the budget, we'll have to ask for a fairer share from " +
+      "the richest among us",
+    support: ['Working Class', 'Middle Class', 'Intelligentsia'],
+    oppose: ['Landowners'],
+    changes: (game) => {
+      return [{
+        path: ['factions', 'Landowners', 'taxRate'],
+        operation: 'MULTIPLY',
+        value: val(1, 11, 20) / 10,
+      }];
+    },
+    getWeight: (game) => {
+      let mult = 1;
+      if (game.capital < 100000) {
+        mult = 5;
+      }
+      return mult * (100 - game.factions['Intelligentsia'].favorability);
+    },
+  },
 
   // Corporate Policies
   {
@@ -216,7 +237,7 @@ const policies = [
     description: 'Business is the bedrock of the economy so we need to give all the ' +
       'support that we can afford.',
     support: ['Corporations'],
-    oppose: ['Middle Class', 'Working Class'],
+    oppose: ['Intelligentsia', 'Middle Class', 'Working Class'],
     changes: (game) => {
       return [{
         path: ['factions', 'Corporations', 'subsidy'],
@@ -233,7 +254,7 @@ const policies = [
     name: 'Raise Prices',
     description: 'Supply and Demand dictates higher prices required!',
     support: ['Corporations'],
-    oppose: ['Middle Class', 'Working Class'],
+    oppose: ['Middle Class', 'Working Class', 'Intelligentsia'],
     changes: (game) => {
       const priceChange = val(15, 11, 30) / 10;
       return [
@@ -263,7 +284,7 @@ const policies = [
     description: 'Business leaders NEED lower taxes in order to keep the economy ' +
       'going, please lower their taxes.',
     support: ['Corporations'],
-    oppose: ['Middle Class', 'Working Class'],
+    oppose: ['Intelligentsia', 'Middle Class', 'Working Class'],
     changes: (game) => {
       return [{
         path: ['factions', 'Corporations', 'taxRate'],
@@ -280,7 +301,7 @@ const policies = [
     description: "Workers don't deserve as much pay as they're getting, by lowering " +
       "their wages we can focus on the important things -- business.",
     support: ['Corporations'],
-    oppose: ['Middle Class'],
+    oppose: ['Middle Class', 'Intelligentsia'],
     changes: (game) => {
       return [{
         path: ['factions', 'Middle Class', 'props', 'wage'],
@@ -297,7 +318,7 @@ const policies = [
     description: "Workers don't deserve as much pay as they're getting, by lowering " +
       "their wages we can focus on the important things -- business.",
     support: ['Corporations'],
-    oppose: ['Working Class'],
+    oppose: ['Working Class', 'Intelligentsia'],
     changes: (game) => {
       return [{
         path: ['factions', 'Working Class', 'props', 'wage'],
@@ -413,6 +434,22 @@ const policies = [
       }];
     },
     useOnce: false,
+    getWeight: (game) => {
+      return 100 - game.factions['Middle Class'].favorability;
+    },
+  },
+  {
+    name: 'Lower Middle Class Rent',
+    description: 'Rent is too high for our most skilled workers.',
+    support: ['Middle Class'],
+    oppose: ['Landowners'],
+    changes: (game) => {
+      return [{
+        path: ['factions', 'Landowners', 'props', 'middleClassRent'],
+        operation: 'MULTIPLY',
+        value: val(0.5, 0.5, 0.9),
+      }];
+    },
     getWeight: (game) => {
       return 100 - game.factions['Middle Class'].favorability;
     },
@@ -544,6 +581,22 @@ const policies = [
     },
   },
   {
+    name: 'Lower Working Class Rent',
+    description: 'The rent is too damn high!',
+    support: ['Working Class'],
+    oppose: ['Landowners'],
+    changes: (game) => {
+      return [{
+        path: ['factions', 'Landowners', 'props', 'workingClassRent'],
+        operation: 'MULTIPLY',
+        value: val(0.5, 0.5, 0.9),
+      }];
+    },
+    getWeight: (game) => {
+      return 100 - game.factions['Working Class'].favorability;
+    },
+  },
+  {
     name: 'Subsidize Working Class',
     description: 'The Working Class is the bedrock of the economy so we need to give all the ' +
       'support that we can afford.',
@@ -568,7 +621,7 @@ const policies = [
     support: ['Working Class'],
     oppose: ['Corporations', 'Middle Class'],
     changes: (game) => {
-      const handout = Math.min(val(100000, 50000, 150000));
+      const handout = Math.min(val(100000, 50000, 150000), game.capital);
       return [
         {
           path: ['factions', 'Working Class', 'wealth'],
@@ -594,7 +647,7 @@ const policies = [
     support: ['Working Class'],
     oppose: ['Corporations'],
     changes: (game) => {
-      const handout = Math.min(val(100000, 50000, 150000));
+      const handout = Math.min(val(100000, 50000, 150000), game.capital);
       return [
         {
           path: ['factions', 'Working Class', 'wealth'],
@@ -663,6 +716,60 @@ const policies = [
       }
     },
   },
+
+  // Landowner policies
+  {
+    name: 'Raise Working Class Rent',
+    description: 'Renters must simply pay for the service provided',
+    support: ['Landowners'],
+    oppose: ['Working Class', 'Intelligentsia'],
+    changes: (game) => {
+      return [{
+        path: ['factions', 'Landowners', 'props', 'workingClassRent'],
+        operation: 'MULTIPLY',
+        value: val(15, 11, 20) / 10,
+      }];
+    },
+    getWeight: (game) => {
+      return 100 - game.factions['Landowners'].favorability;
+    },
+  },
+  {
+    name: 'Raise Middle Class Rent',
+    description: 'Renters must simply pay for the service provided',
+    support: ['Landowners'],
+    oppose: ['Middle Class', 'Intelligentsia'],
+    changes: (game) => {
+      return [{
+        path: ['factions', 'Landowners', 'props', 'middleClassRent'],
+        operation: 'MULTIPLY',
+        value: val(15, 11, 20) / 10,
+      }];
+    },
+    getWeight: (game) => {
+      return 100 - game.factions['Landowners'].favorability;
+    },
+  },
+  {
+    name: 'Lower Landowners Tax Rate',
+    description: 'Landowners NEED lower taxes in order to keep people in their homes',
+    support: ['Landowners'],
+    oppose: ['Middle Class', 'Working Class', 'Intelligentsia'],
+    changes: (game) => {
+      return [{
+        path: ['factions', 'Landowners', 'taxRate'],
+        operation: 'MULTIPLY',
+        value: val(0.5, 0.5, 0.8),
+      }];
+    },
+    getWeight: (game) => {
+      return 100 - game.factions['Corporations'].favorability;
+    },
+  },
+
+  // Intelligentsia policies
+
+  // Army policies
 ];
 
 

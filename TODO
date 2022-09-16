@@ -4,6 +4,7 @@
   - landowners are just raking it in
   - have description as first line of hovercards?
   - add landowners/intelligentsia/army to support/oppose for all policies
+  - policies should be more likely based on wealth/wealthDelta of factions
   - many more policies
     - raise/lower rents
     - raise/lower army/intelligentsia/landowner subsidies
