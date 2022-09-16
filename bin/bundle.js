@@ -295,7 +295,7 @@ var config = {
     favorability: 50,
     props: {
       hiringRate: 0.1,
-      inventory: 25000,
+      inventory: 50000,
       price: val(5, 2, 7)
     }
   }), _defineProperty(_factions, 'Middle Class', {
@@ -308,8 +308,8 @@ var config = {
     props: {
       unemployment: val(0.1, 0, 0.3), // rate of not employed
       wage: val(10, 2, 30, true), // wage going to each employed person
-      demand: val(2, 1, 5), // how much inventory each person wants
-      skill: val(5, 3, 10) // how much more productive than working class employed person is
+      demand: val(2, 2, 5), // how much inventory each person wants
+      skill: val(5, 3, 8) // how much more productive than working class employed person is
     }
   }), _defineProperty(_factions, 'Working Class', {
     name: 'Working Class',
@@ -343,6 +343,28 @@ var policies = [
     return 100 - game.factions['Corporations'].favorability;
   }
 }, {
+  name: 'Raise Prices',
+  description: 'Supply and Demand dictates higher prices required!',
+  support: ['Corporations'],
+  oppose: ['Middle Class', 'Working Class'],
+  changes: [{
+    path: ['factions', 'Corporations', 'props', 'price'],
+    operation: 'MULTIPLY',
+    value: 1.5
+  }, {
+    path: ['factions', 'Middle Class', 'props', 'demand'],
+    operation: 'MULTIPLY',
+    value: 0.75
+  }],
+  getWeight: function getWeight(game) {
+    var mids = game.factions['Middle Class'];
+    if (mids.props.demand > mids.props.skill) {
+      return 500;
+    } else {
+      return 100 - game.factions['Corporations'].favorability;
+    }
+  }
+}, {
   name: 'Lower Corporate Tax Rate',
   description: 'Business leaders NEED lower taxes in order to keep the economy ' + 'going, please lower their taxes.',
   support: ['Corporations'],
@@ -366,8 +388,11 @@ var policies = [
     value: 1.5
   }],
   getWeight: function getWeight(game) {
-    // TODO: could be more likely when capital is going down
-    return 100 - game.factions['Corporations'].favorability;
+    var mult = 1;
+    if (game.capital < 100000) {
+      mult = 3;
+    }
+    return mult * (100 - game.factions['Corporations'].favorability);
   }
 }, {
   name: 'Raise Working Class Tax Rate',
@@ -380,8 +405,11 @@ var policies = [
     value: 1.5
   }],
   getWeight: function getWeight(game) {
-    // TODO: could be more likely when capital is going down
-    return 100 - game.factions['Corporations'].favorability;
+    var mult = 1;
+    if (game.capital < 100000) {
+      mult = 3;
+    }
+    return mult * (100 - game.factions['Corporations'].favorability);
   }
 }, {
   name: 'Lower Middle Class Wages',
@@ -533,7 +561,7 @@ var policies = [
     operation: 'MULTIPLY',
     value: 0.1
   }, {
-    path: ['factions', 'Working Class', 'props', 'wage'],
+    path: ['factions', 'Middle Class', 'props', 'wage'],
     operation: 'ADD',
     value: 2
   }, {
@@ -848,7 +876,7 @@ var gameReducer = function gameReducer(game, action) {
         game.time += 1;
         game.ticksToNextPolicy--;
         if (game.ticksToNextPolicy == -1) {
-          game.ticksToNextPolicy = normalIn(3, 6);
+          game.ticksToNextPolicy = randomIn(3, 6);
         }
 
         var months = game.time > 1 ? 'months' : 'month';
@@ -1054,13 +1082,14 @@ var gameReducer = function gameReducer(game, action) {
         // compute favorability (gdp change, taxRate, wealth change, unemployment)
         for (var _factionName3 in game.factions) {
           var _faction2 = game.factions[_factionName3];
-          if (_faction2.wealth < prevWealth[_factionName3] || _faction2.wealth < 10) {
+          if ((_faction2.wealth < prevWealth[_factionName3] || _faction2.wealth < 10) && (_factionName3 == 'Working Class' && _faction2.wealth < 100000 || _factionName3 != 'Working Class') && (_factionName3 == 'Middle Class' && _faction2.wealth < 250000 || _factionName3 != 'Middle Class')) {
             _faction2.favorability -= 1;
             _faction2.favorabilityDelta['Wealth decreasing'] = -1 / 100;
-          } else if (_faction2.wealth - prevWealth[_factionName3] > prevWealth[_factionName3] * 0.02) {
+          } else if (_faction2.wealth - prevWealth[_factionName3] > 0 && _faction2.wealth > 100) {
             _faction2.favorability += 1;
             _faction2.favorabilityDelta['Wealth increasing'] = 1 / 100;
           }
+
           if (_faction2.props.unemployment > 0.1) {
             // const favorabilityDelta = Math.floor(faction.props.unemployment * 5);
             var _favorabilityDelta3 = 1;
@@ -1106,9 +1135,14 @@ var gameReducer = function gameReducer(game, action) {
 
 function appendTicker(game, message) {
   game.ticker.push(message);
-  // if (game.ticker.length > config.maxTickerLength) {
-  //   game.ticker.shift();
-  // }
+  if (game.ticker.length > config.maxTickerLength) {
+    // HACK: put in a timeout since the ticker hasn't rendered yet
+    setTimeout(function () {
+      var tickerElem = document.getElementById('ticker');
+      tickerElem.scrollTop = tickerElem.scrollHeight + 1000;
+    }, 100);
+    // game.ticker.shift();
+  }
 }
 
 module.exports = { gameReducer: gameReducer };
@@ -1423,6 +1457,8 @@ module.exports = { initGameOverSystem: initGameOverSystem };
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 var React = require('react');
 
 var _require = require('bens_ui_components'),
@@ -1503,6 +1539,8 @@ function Game(props) {
 }
 
 function Ticker(props) {
+  var _ref;
+
   var game = props.game;
 
   var messages = [];
@@ -1517,17 +1555,21 @@ function Ticker(props) {
       message
     ));
   }
+
   return React.createElement(
-    InfoCard,
+    'div',
     {
-      style: {
-        height: 128,
+      id: 'ticker',
+      style: (_ref = {
+        border: '1px solid black',
+        backgroundColor: 'white',
+        verticalAlign: 'top',
+        marginBottom: 4,
+        marginLeft: 4,
         padding: 4,
-        marginTop: 4,
-        marginRight: 4,
-        overflow: 'scroll',
-        display: 'block'
-      }
+
+        height: 128
+      }, _defineProperty(_ref, 'padding', 4), _defineProperty(_ref, 'marginTop', 4), _defineProperty(_ref, 'marginRight', 4), _defineProperty(_ref, 'overflow', 'scroll'), _defineProperty(_ref, 'display', 'block'), _ref)
     },
     messages
   );
@@ -1563,20 +1605,16 @@ function Info(props) {
       'GDP: $',
       game.gdp
     ),
-    React.createElement(
-      'div',
-      null,
-      React.createElement(Button, {
-        label: 'Step Simulation',
-        disabled: game.policy != null,
-        onClick: function onClick() {
-          dispatch({ type: 'TICK' });
-        }
-      })
-    ),
+    React.createElement(Button, {
+      label: 'Step',
+      disabled: game.policy != null,
+      onClick: function onClick() {
+        dispatch({ type: 'TICK' });
+      }
+    }),
     React.createElement(Button, {
       id: game.tickInterval ? '' : 'PLAY',
-      label: game.tickInterval ? 'Pause Simulation' : 'Start Simulation',
+      label: game.tickInterval ? 'Pause' : 'Play',
       disabled: game.policy != null,
       onClick: function onClick() {
         // dispatch({type: 'TICK'});
@@ -1587,16 +1625,20 @@ function Info(props) {
         }
       }
     }),
-    React.createElement(Button, {
-      label: 'View Policy Proposal',
-      disabled: game.policy == null,
-      onClick: function onClick() {
-        dispatch({
-          type: 'SET_MODAL',
-          modal: React.createElement(PolicyModal, { dispatch: dispatch, policy: game.policy })
-        });
-      }
-    })
+    React.createElement(
+      'div',
+      null,
+      React.createElement(Button, {
+        label: 'View Policy Proposal',
+        disabled: game.policy == null,
+        onClick: function onClick() {
+          dispatch({
+            type: 'SET_MODAL',
+            modal: React.createElement(PolicyModal, { dispatch: dispatch, policy: game.policy })
+          });
+        }
+      })
+    )
   );
 }
 

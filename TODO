@@ -1,17 +1,17 @@
 
 - - - - - PLAYTEST - - - - - -
-  - more policies that are random big monetary handouts
-  - strike-breaker policies that punish low-favorability
   - policies for increasing capital when it's low
-  - if middle class demand > skill then inventory will never be enough
-
+    - reducing subsidies
+    - make raising taxes more likely (on richest factions?)
+  - policy changes need to be a function
+    - that randomized vals can get called every time
+    - one-time cash handouts need to check that the gov can afford
+  - too easy to make everyone happy with current wealth -> favorability rules?
+    - increase favorability penalties from other issues
 
 - - - - - - BUGS - - - - - -
-  - make ticker auto-scroll with appending
   - auto-playing ticks still hides indicators when policy pops up
   - keep population/inventory/etc rounded
-  - working class inventory deficits can be way less than demand?
-  - one-time cash handouts need to check that the gov can afford
   - need dicts for money/percents
     - in policy_change, in policy display, in game ui
     - specifically favorability
@@ -20,18 +20,24 @@
 - - - - - SIMULATION - - - - - -
   - favorability changes
     - consequences of unfavorability per faction
-      - poor -> strikes, then revolution
       - middle class -> strikes
-      - corps -> reducing production, then leaving
-    - how to bounce back from 0% favorability ?
-      - 0% favorable factions propose radical policies
-        that they really want
+      - corps -> raising prices
     - bonuses for high favorability ?
       - poor -> ?
       - middle class -> greater skill
       - corps -> greater production
   - add in additional factions
-    - landowners, intelligentsia, army
+    - landowners
+      - charge rents middle and working class
+      - produce food?
+      - working class can be unhoused (middle class -> working class when can't afford)
+    - intelligentsia
+      - subsidized
+      - increase middle class skill occasionally
+      - increase middle/working class favorability occasionally
+    - army
+      - big cost center
+      - can employ working class
     - maybe they appear later?
       - start with landowners + working class?
   - construction:
@@ -67,5 +73,3 @@
 
 
 
-./config.js:      // TODO: could be more likely when capital is going down
-./config.js:      // TODO: could be more likely when capital is going down

@@ -95,7 +95,7 @@ const gameReducer = (game, action) => {
       game.time += 1;
       game.ticksToNextPolicy--;
       if (game.ticksToNextPolicy == -1) {
-        game.ticksToNextPolicy = normalIn(3, 6);
+        game.ticksToNextPolicy = randomIn(3, 6);
       }
 
       let months = game.time > 1 ? 'months' : 'month';
@@ -335,14 +335,26 @@ const gameReducer = (game, action) => {
       for (const factionName in game.factions) {
         const faction = game.factions[factionName];
         if (
-          faction.wealth < prevWealth[factionName] || faction.wealth < 10
+          (faction.wealth < prevWealth[factionName] || faction.wealth < 10) &&
+          (
+            (factionName == 'Working Class' && faction.wealth < 100000)
+            || factionName != 'Working Class'
+          ) &&
+          (
+            (factionName == 'Middle Class' && faction.wealth < 250000)
+            || factionName != 'Middle Class'
+          )
         ) {
           faction.favorability -= 1;
           faction.favorabilityDelta['Wealth decreasing'] = -1/100;
-        } else if (faction.wealth - prevWealth[factionName] > prevWealth[factionName] * 0.02) {
+        } else if (
+          faction.wealth - prevWealth[factionName] > 0 &&
+          faction.wealth > 100
+        ) {
           faction.favorability += 1;
           faction.favorabilityDelta['Wealth increasing'] = 1/100;
         }
+
         if (faction.props.unemployment > 0.1) {
           // const favorabilityDelta = Math.floor(faction.props.unemployment * 5);
           const favorabilityDelta = 1;
@@ -384,10 +396,15 @@ const gameReducer = (game, action) => {
 }
 
 function appendTicker(game, message) {
-    game.ticker.push(message);
-    // if (game.ticker.length > config.maxTickerLength) {
-    //   game.ticker.shift();
-    // }
+  game.ticker.push(message);
+  if (game.ticker.length > config.maxTickerLength) {
+    // HACK: put in a timeout since the ticker hasn't rendered yet
+    setTimeout(() => {
+      const tickerElem = document.getElementById('ticker');
+      tickerElem.scrollTop = tickerElem.scrollHeight + 1000;
+    }, 100);
+    // game.ticker.shift();
+  }
 }
 
 

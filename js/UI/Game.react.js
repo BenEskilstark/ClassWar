@@ -75,16 +75,24 @@ function Ticker(props): React.Node {
       <div
         key={"ticker_" + i}
         style={{
-
         }}
       >
         {message}
       </div>
     );
   }
+
   return (
-    <InfoCard
+    <div
+      id="ticker"
       style={{
+        border: '1px solid black',
+        backgroundColor: 'white',
+        verticalAlign: 'top',
+        marginBottom: 4,
+        marginLeft: 4,
+        padding: 4,
+
         height: 128,
         padding: 4,
         marginTop: 4,
@@ -94,7 +102,7 @@ function Ticker(props): React.Node {
       }}
     >
       {messages}
-    </InfoCard>
+    </div>
   );
 }
 
@@ -117,18 +125,16 @@ function Info(props): React.Node {
       <div>
         GDP: ${game.gdp}
       </div>
-      <div>
       <Button
-        label={'Step Simulation'}
+        label={'Step'}
         disabled={game.policy != null}
         onClick={() => {
           dispatch({type: 'TICK'});
         }}
       />
-      </div>
       <Button
         id={game.tickInterval ? '' : 'PLAY'}
-        label={game.tickInterval ? 'Pause Simulation' : 'Start Simulation'}
+        label={game.tickInterval ? 'Pause' : 'Play'}
         disabled={game.policy != null}
         onClick={() => {
           // dispatch({type: 'TICK'});
@@ -139,16 +145,18 @@ function Info(props): React.Node {
           }
         }}
       />
-      <Button
-        label="View Policy Proposal"
-        disabled={game.policy == null}
-        onClick={() => {
-          dispatch({
-            type: 'SET_MODAL',
-            modal: <PolicyModal dispatch={dispatch} policy={game.policy} />,
-          });
-        }}
-      />
+      <div>
+        <Button
+          label="View Policy Proposal"
+          disabled={game.policy == null}
+          onClick={() => {
+            dispatch({
+              type: 'SET_MODAL',
+              modal: <PolicyModal dispatch={dispatch} policy={game.policy} />,
+            });
+          }}
+        />
+      </div>
     </InfoCard>
   );
 }

@@ -39,7 +39,7 @@ const config = {
       favorability: 50,
       props: {
         hiringRate: 0.1,
-        inventory: 25000,
+        inventory: 50000,
         price: val(5, 2, 7),
       },
     },
@@ -54,8 +54,8 @@ const config = {
       props: {
         unemployment: val(0.1, 0, 0.3), // rate of not employed
         wage: val(10, 2, 30, true), // wage going to each employed person
-        demand: val(2, 1, 5), // how much inventory each person wants
-        skill: val(5, 3, 10), // how much more productive than working class employed person is
+        demand: val(2, 2, 5), // how much inventory each person wants
+        skill: val(5, 3, 8), // how much more productive than working class employed person is
       },
     },
 
@@ -100,6 +100,32 @@ const policies = [
     },
   },
   {
+    name: 'Raise Prices',
+    description: 'Supply and Demand dictates higher prices required!',
+    support: ['Corporations'],
+    oppose: ['Middle Class', 'Working Class'],
+    changes: [
+      {
+        path: ['factions', 'Corporations', 'props', 'price'],
+        operation: 'MULTIPLY',
+        value: 1.5,
+      },
+      {
+        path: ['factions', 'Middle Class', 'props', 'demand'],
+        operation: 'MULTIPLY',
+        value: 0.75,
+      },
+    ],
+    getWeight: (game) => {
+      const mids = game.factions['Middle Class'];
+      if (mids.props.demand > mids.props.skill) {
+        return 500;
+      } else {
+        return 100 - game.factions['Corporations'].favorability;
+      }
+    },
+  },
+  {
     name: 'Lower Corporate Tax Rate',
     description: 'Business leaders NEED lower taxes in order to keep the economy ' +
       'going, please lower their taxes.',
@@ -126,8 +152,11 @@ const policies = [
       value: 1.5,
     }],
     getWeight: (game) => {
-      // TODO: could be more likely when capital is going down
-      return 100 - game.factions['Corporations'].favorability;
+      let mult = 1;
+      if (game.capital < 100000) {
+        mult = 3;
+      }
+      return mult * (100 - game.factions['Corporations'].favorability);
     },
   },
   {
@@ -142,8 +171,11 @@ const policies = [
       value: 1.5,
     }],
     getWeight: (game) => {
-      // TODO: could be more likely when capital is going down
-      return 100 - game.factions['Corporations'].favorability;
+      let mult = 1;
+      if (game.capital < 100000) {
+        mult = 3;
+      }
+      return mult * (100 - game.factions['Corporations'].favorability);
     },
   },
   {
@@ -320,7 +352,7 @@ const policies = [
         value: 0.1,
       },
       {
-        path: ['factions', 'Working Class', 'props', 'wage'],
+        path: ['factions', 'Middle Class', 'props', 'wage'],
         operation: 'ADD',
         value: 2,
       },
