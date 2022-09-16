@@ -11,10 +11,11 @@ const {
 const {useState, useMemo, useEffect, useReducer} = React;
 
 function PolicyModal(props): React.Node {
-  const {dispatch, policy} = props;
+  const {dispatch, policy, game} = props;
+  const changes = policy.changes(game);
 
   const prettifiedChanges = [];
-  for (const change of policy.changes) {
+  for (const change of changes) {
     let operation = ' = ';
     if (change.operation == 'ADD') {
       operation = ' + ';
@@ -73,7 +74,7 @@ function PolicyModal(props): React.Node {
         }},
         {label: 'Accept', onClick: () => {
           // implement changes
-          for (const change of policy.changes) {
+          for (const change of changes) {
             dispatch({type: 'POLICY_CHANGE', change});
           }
           // make supporters happy

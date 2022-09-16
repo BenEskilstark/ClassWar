@@ -24,8 +24,10 @@ var useState = React.useState,
 
 function PolicyModal(props) {
   var dispatch = props.dispatch,
-      policy = props.policy;
+      policy = props.policy,
+      game = props.game;
 
+  var changes = policy.changes(game);
 
   var prettifiedChanges = [];
   var _iteratorNormalCompletion = true;
@@ -33,7 +35,7 @@ function PolicyModal(props) {
   var _iteratorError = undefined;
 
   try {
-    for (var _iterator = policy.changes[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+    for (var _iterator = changes[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
       var change = _step.value;
 
       var operation = ' = ';
@@ -195,7 +197,7 @@ function PolicyModal(props) {
         var _iteratorError4 = undefined;
 
         try {
-          for (var _iterator4 = policy.changes[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+          for (var _iterator4 = changes[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
             var change = _step4.value;
 
             dispatch({ type: 'POLICY_CHANGE', change: change });
@@ -281,15 +283,15 @@ var config = {
   msPerTick: 1000,
   maxTickerLength: 7,
 
-  capital: 2000000,
+  capital: 2500000,
 
   subsidyDeficitMult: 5,
   wagesDeficitMult: 5,
 
   factions: (_factions = {}, _defineProperty(_factions, 'Corporations', {
     name: 'Corporations',
-    wealth: 1000000,
-    taxRate: val(0.2, 0, 0.5),
+    wealth: 1500000,
+    taxRate: val(0.2, 0, 0.4),
     subsidy: val(0, 10000, 50000),
     population: val(50, 1, 100, true),
     favorability: 50,
@@ -298,18 +300,26 @@ var config = {
       inventory: 50000,
       price: val(5, 2, 7)
     }
-  }), _defineProperty(_factions, 'Middle Class', {
-    name: 'Middle Class',
+  }), _defineProperty(_factions, 'Military', {
+    name: 'Military',
     wealth: 500000,
-    taxRate: val(0.4, 0, 0.4),
-    subsidy: val(0, 5000, 15000),
-    population: val(1000, 100, 10000),
+    taxRate: 0,
+    subsidy: val(0, 25000, 75000),
+    population: val(500, 1, 1000, true),
     favorability: 50,
     props: {
-      unemployment: val(0.1, 0, 0.3), // rate of not employed
-      wage: val(10, 2, 30, true), // wage going to each employed person
-      demand: val(2, 2, 5), // how much inventory each person wants
-      skill: val(5, 3, 8) // how much more productive than working class employed person is
+      upkeepCosts: val(25000, 25000, 50000) // cost per turn from their wealth
+    }
+  }), _defineProperty(_factions, 'Landowners', {
+    name: 'Landowners',
+    wealth: 1500000,
+    taxRate: val(0.2, 0, 0.4),
+    subsidy: val(0, 10000, 50000),
+    population: val(50, 1, 100, true),
+    favorability: 50,
+    props: {
+      workingClassRent: val(2, 1, 3), // rent charged to working class per turn
+      middleClassRent: val(10, 5, 10) // charged to middle class per turn
     }
   }), _defineProperty(_factions, 'Working Class', {
     name: 'Working Class',
@@ -320,24 +330,131 @@ var config = {
     favorability: 50,
     props: {
       unemployment: val(0.1, 0, 0.3), // rate of not employed
-      wage: val(3, 1, 6), // wage going to each employed person
-      demand: 1 // how much inventory each person wants
+      wage: val(3, 2, 6), // wage going to each employed person
+      demand: 1, // how much inventory each person wants
+      unhoused: 0 // can't afford housing
+    }
+  }), _defineProperty(_factions, 'Middle Class', {
+    name: 'Middle Class',
+    wealth: 750000,
+    taxRate: val(0.4, 0, 0.4),
+    subsidy: val(0, 5000, 15000),
+    population: val(1000, 100, 10000),
+    favorability: 50,
+    props: {
+      unemployment: val(0.1, 0, 0.3), // rate of not employed
+      wage: val(10, 2, 30, true), // wage going to each employed person
+      demand: val(2, 2, 5), // how much inventory each person wants
+      skill: val(5, 3, 8) // how much more productive than working class employed person is
+    }
+  }), _defineProperty(_factions, 'Intelligentsia', {
+    name: 'Intelligentsia',
+    wealth: 1000000,
+    taxRate: 0,
+    subsidy: val(0, 25000, 75000),
+    population: val(1000, 100, 10000),
+    favorability: 50,
+    props: {
+      upkeepCosts: val(25000, 25000, 50000), // cost per turn from their wealth
+      universities: 1, // makes skill increases more likely
+      movieStudios: 1 // makes favorability increases more likely
     }
   }), _factions)
 };
 
 var policies = [
+// Government Policies
+{
+  name: 'Reduce Corporate Subsidies',
+  description: 'We must stop the corporate handouts and keep the money for more important ' + 'societal projects.',
+  support: ['Working Class'],
+  oppose: ['Corporations'],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Corporations', 'subsidy'],
+      operation: 'MULTIPLY',
+      value: val(0.5, 0.2, 0.8)
+    }];
+  },
+  getWeight: function getWeight(game) {
+    var mult = 1;
+    if (game.capital < 100000) {
+      mult = 4;
+    }
+    return mult * (100 - game.factions['Working Class'].favorability);
+  }
+}, {
+  name: 'Raise Middle Class Tax Rate',
+  description: "To balance the budget, we'll have to ask for a fairer share from " + "the more privileged among us.",
+  support: ['Corporations'],
+  oppose: ['Middle Class'],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Middle Class', 'taxRate'],
+      operation: 'MULTIPLY',
+      value: val(1, 11, 20) / 10
+    }];
+  },
+  getWeight: function getWeight(game) {
+    var mult = 1;
+    if (game.capital < 100000) {
+      mult = 3;
+    }
+    return mult * (100 - game.factions['Corporations'].favorability);
+  }
+}, {
+  name: 'Raise Working Class Tax Rate',
+  description: "In these times of austerity, everyone must chip in to keep " + "society afloat.",
+  support: ['Corporations'],
+  oppose: ['Working Class'],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Working Class', 'taxRate'],
+      operation: 'MULTIPLY',
+      value: val(1, 11, 20) / 10
+    }];
+  },
+  getWeight: function getWeight(game) {
+    var mult = 1;
+    if (game.capital < 100000) {
+      mult = 3;
+    }
+    return mult * (100 - game.factions['Corporations'].favorability);
+  }
+}, {
+  name: 'Raise Corporate Tax Rate',
+  description: "To balance the budget, we'll have to ask for a fairer share from " + "the richest among us",
+  support: ['Working Class', 'Middle Class'],
+  oppose: ['Corporations'],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Corporations', 'taxRate'],
+      operation: 'MULTIPLY',
+      value: val(1, 11, 20) / 10
+    }];
+  },
+  getWeight: function getWeight(game) {
+    var mult = 1;
+    if (game.capital < 100000) {
+      mult = 4;
+    }
+    return mult * (100 - game.factions['Middle Class'].favorability);
+  }
+},
+
 // Corporate Policies
 {
   name: 'Subsidize Corporations',
   description: 'Business is the bedrock of the economy so we need to give all the ' + 'support that we can afford.',
   support: ['Corporations'],
   oppose: ['Middle Class', 'Working Class'],
-  changes: [{
-    path: ['factions', 'Corporations', 'subsidy'],
-    operation: 'ADD',
-    value: 25000
-  }],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Corporations', 'subsidy'],
+      operation: 'ADD',
+      value: val(25000, 10000, 100000)
+    }];
+  },
   useOnce: false,
   getWeight: function getWeight(game) {
     return 100 - game.factions['Corporations'].favorability;
@@ -347,15 +464,18 @@ var policies = [
   description: 'Supply and Demand dictates higher prices required!',
   support: ['Corporations'],
   oppose: ['Middle Class', 'Working Class'],
-  changes: [{
-    path: ['factions', 'Corporations', 'props', 'price'],
-    operation: 'MULTIPLY',
-    value: 1.5
-  }, {
-    path: ['factions', 'Middle Class', 'props', 'demand'],
-    operation: 'MULTIPLY',
-    value: 0.75
-  }],
+  changes: function changes(game) {
+    var priceChange = val(15, 11, 30) / 10;
+    return [{
+      path: ['factions', 'Corporations', 'props', 'price'],
+      operation: 'MULTIPLY',
+      value: priceChange
+    }, {
+      path: ['factions', 'Middle Class', 'props', 'demand'],
+      operation: 'MULTIPLY',
+      value: Math.round(1 / priceChange * 100) / 100 + 0.1
+    }];
+  },
   getWeight: function getWeight(game) {
     var mids = game.factions['Middle Class'];
     if (mids.props.demand > mids.props.skill) {
@@ -369,58 +489,28 @@ var policies = [
   description: 'Business leaders NEED lower taxes in order to keep the economy ' + 'going, please lower their taxes.',
   support: ['Corporations'],
   oppose: ['Middle Class', 'Working Class'],
-  changes: [{
-    path: ['factions', 'Corporations', 'taxRate'],
-    operation: 'MULTIPLY',
-    value: 0.5
-  }],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Corporations', 'taxRate'],
+      operation: 'MULTIPLY',
+      value: val(0.5, 0.3, 0.8)
+    }];
+  },
   getWeight: function getWeight(game) {
     return 100 - game.factions['Corporations'].favorability;
-  }
-}, {
-  name: 'Raise Middle Class Tax Rate',
-  description: "To balance the budget, we'll have to ask for a fairer share from " + "the more privileged among us.",
-  support: ['Corporations'],
-  oppose: ['Middle Class'],
-  changes: [{
-    path: ['factions', 'Middle Class', 'taxRate'],
-    operation: 'MULTIPLY',
-    value: 1.5
-  }],
-  getWeight: function getWeight(game) {
-    var mult = 1;
-    if (game.capital < 100000) {
-      mult = 3;
-    }
-    return mult * (100 - game.factions['Corporations'].favorability);
-  }
-}, {
-  name: 'Raise Working Class Tax Rate',
-  description: "In these times of austerity, everyone must chip in to keep " + "society afloat.",
-  support: ['Corporations'],
-  oppose: ['Working Class'],
-  changes: [{
-    path: ['factions', 'Working Class', 'taxRate'],
-    operation: 'MULTIPLY',
-    value: 1.5
-  }],
-  getWeight: function getWeight(game) {
-    var mult = 1;
-    if (game.capital < 100000) {
-      mult = 3;
-    }
-    return mult * (100 - game.factions['Corporations'].favorability);
   }
 }, {
   name: 'Lower Middle Class Wages',
   description: "Workers don't deserve as much pay as they're getting, by lowering " + "their wages we can focus on the important things -- business.",
   support: ['Corporations'],
   oppose: ['Middle Class'],
-  changes: [{
-    path: ['factions', 'Middle Class', 'props', 'wage'],
-    operation: 'MULTIPLY',
-    value: 0.75
-  }],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Middle Class', 'props', 'wage'],
+      operation: 'MULTIPLY',
+      value: val(0.5, 0.5, 0.9)
+    }];
+  },
   getWeight: function getWeight(game) {
     return 100 - game.factions['Corporations'].favorability;
   }
@@ -429,11 +519,13 @@ var policies = [
   description: "Workers don't deserve as much pay as they're getting, by lowering " + "their wages we can focus on the important things -- business.",
   support: ['Corporations'],
   oppose: ['Working Class'],
-  changes: [{
-    path: ['factions', 'Working Class', 'props', 'wage'],
-    operation: 'MULTIPLY',
-    value: 0.75
-  }],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Working Class', 'props', 'wage'],
+      operation: 'MULTIPLY',
+      value: val(0.5, 0.5, 0.9)
+    }];
+  },
   getWeight: function getWeight(game) {
     return 100 - game.factions['Corporations'].favorability;
   }
@@ -442,11 +534,18 @@ var policies = [
   description: 'Business is the bedrock of the economy so we need to give all the ' + 'support that we can afford.',
   support: ['Corporations'],
   oppose: ['Middle Class', 'Working Class'],
-  changes: [{
-    path: ['factions', 'Corporations', 'wealth'],
-    operation: 'ADD',
-    value: 250000
-  }],
+  changes: function changes(game) {
+    var value = Math.min(val(250000, 100000, 500000), game.capital);
+    return [{
+      path: ['factions', 'Corporations', 'wealth'],
+      operation: 'ADD',
+      value: value
+    }, {
+      path: ['capital'],
+      operation: 'ADD',
+      value: -1 * handout
+    }];
+  },
   useOnce: false,
   getWeight: function getWeight(game) {
     return 100 - game.factions['Corporations'].favorability;
@@ -457,27 +556,30 @@ var policies = [
   description: "We need radical solutions to save the Corporations",
   support: ['Corporations'],
   oppose: ['Working Class', 'Middle Class'],
-  changes: [{
-    path: ['factions', 'Corporations', 'wealth'],
-    operation: 'ADD',
-    value: 1000000
-  }, {
-    path: ['capital'],
-    operation: 'ADD',
-    value: -1000000
-  }, {
-    path: ['factions', 'Corporations', 'taxRate'],
-    operation: 'MULTIPLY',
-    value: 0.1
-  }, {
-    path: ['factions', 'Corporations', 'props', 'price'],
-    operation: 'MULTIPLY',
-    value: 2
-  }, {
-    path: ['factions', 'Corporations', 'favorability'],
-    operation: 'ADD',
-    value: 20
-  }],
+  changes: function changes(game) {
+    var handout = Math.min(val(500000, 250000, 1000000), game.capital);
+    return [{
+      path: ['factions', 'Corporations', 'wealth'],
+      operation: 'ADD',
+      value: handout
+    }, {
+      path: ['capital'],
+      operation: 'ADD',
+      value: -1 * handout
+    }, {
+      path: ['factions', 'Corporations', 'taxRate'],
+      operation: 'MULTIPLY',
+      value: 0.1
+    }, {
+      path: ['factions', 'Corporations', 'props', 'price'],
+      operation: 'MULTIPLY',
+      value: 2
+    }, {
+      path: ['factions', 'Corporations', 'favorability'],
+      operation: 'ADD',
+      value: 20
+    }];
+  },
   getWeight: function getWeight(game) {
     if (game.factions['Corporations'].favorability > 0) {
       return 1;
@@ -493,11 +595,13 @@ var policies = [
   description: 'A thriving Middle Class is critical to a healthy society -- ' + ' we must reduce their burden by lowering their taxes.',
   support: ['Middle Class'],
   oppose: ['Working Class'],
-  changes: [{
-    path: ['factions', 'Middle Class', 'taxRate'],
-    operation: 'MULTIPLY',
-    value: 0.5
-  }],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Middle Class', 'taxRate'],
+      operation: 'MULTIPLY',
+      value: val(0.5, 0.3, 0.8)
+    }];
+  },
   getWeight: function getWeight(game) {
     return 100 - game.factions['Middle Class'].favorability;
   }
@@ -506,11 +610,13 @@ var policies = [
   description: 'The Middle Class is the bedrock of the economy so we need to give all the ' + 'support that we can afford.',
   support: ['Middle Class'],
   oppose: ['Corporations', 'Working Class'],
-  changes: [{
-    path: ['factions', 'Middle Class', 'subsidy'],
-    operation: 'ADD',
-    value: 15000
-  }],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Middle Class', 'subsidy'],
+      operation: 'ADD',
+      value: val(15000, 5000, 25000)
+    }];
+  },
   useOnce: false,
   getWeight: function getWeight(game) {
     return 100 - game.factions['Middle Class'].favorability;
@@ -520,11 +626,18 @@ var policies = [
   description: 'The Middle Class is the bedrock of the economy so we need to give all the ' + 'support that we can afford.',
   support: ['Middle Class'],
   oppose: ['Corporations', 'Working Class'],
-  changes: [{
-    path: ['factions', 'Middle Class', 'wealth'],
-    operation: 'ADD',
-    value: 100000
-  }],
+  changes: function changes(game) {
+    var handout = Math.min(val(50000, 50000, 150000), game.capital);
+    return [{
+      path: ['factions', 'Middle Class', 'wealth'],
+      operation: 'ADD',
+      value: handout
+    }, {
+      path: ['capital'],
+      operation: 'ADD',
+      value: -1 * handout
+    }];
+  },
   useOnce: false,
   getWeight: function getWeight(game) {
     return 100 - game.factions['Middle Class'].favorability;
@@ -534,11 +647,13 @@ var policies = [
   description: "Skilled workers need to be compensated fairly for their work",
   support: ['Middle Class'],
   oppose: ['Corporations'],
-  changes: [{
-    path: ['factions', 'Middle Class', 'props', 'wage'],
-    operation: 'MULTIPLY',
-    value: 1.25
-  }],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Middle Class', 'props', 'wage'],
+      operation: 'MULTIPLY',
+      value: val(12.5, 11, 25) / 10
+    }];
+  },
   getWeight: function getWeight(game) {
     return 100 - game.factions['Middle Class'].favorability;
   }
@@ -548,31 +663,34 @@ var policies = [
   description: "We need radical solutions to get the Middle Class back on track",
   support: ['Middle Class'],
   oppose: ['Corporations', 'Working Class'],
-  changes: [{
-    path: ['factions', 'Middle Class', 'wealth'],
-    operation: 'ADD',
-    value: 200000
-  }, {
-    path: ['capital'],
-    operation: 'ADD',
-    value: -200000
-  }, {
-    path: ['factions', 'Middle Class', 'taxRate'],
-    operation: 'MULTIPLY',
-    value: 0.1
-  }, {
-    path: ['factions', 'Middle Class', 'props', 'wage'],
-    operation: 'ADD',
-    value: 2
-  }, {
-    path: ['factions', 'Middle Class', 'props', 'unemployment'],
-    operation: 'MULTIPLY',
-    value: 0.1
-  }, {
-    path: ['factions', 'Middle Class', 'favorability'],
-    operation: 'ADD',
-    value: 20
-  }],
+  changes: function changes(game) {
+    var handout = Math.min(val(50000, 50000, 250000), game.capital);
+    return [{
+      path: ['factions', 'Middle Class', 'wealth'],
+      operation: 'ADD',
+      value: handout
+    }, {
+      path: ['capital'],
+      operation: 'ADD',
+      value: -1 * handout
+    }, {
+      path: ['factions', 'Middle Class', 'taxRate'],
+      operation: 'MULTIPLY',
+      value: 0.1
+    }, {
+      path: ['factions', 'Middle Class', 'props', 'wage'],
+      operation: 'ADD',
+      value: 2
+    }, {
+      path: ['factions', 'Middle Class', 'props', 'unemployment'],
+      operation: 'MULTIPLY',
+      value: 0.1
+    }, {
+      path: ['factions', 'Middle Class', 'favorability'],
+      operation: 'ADD',
+      value: 20
+    }];
+  },
   getWeight: function getWeight(game) {
     if (game.factions['Middle Class'].favorability > 0) {
       return 1;
@@ -588,11 +706,13 @@ var policies = [
   description: "Enough is enough! We must stop taking so much from the people!",
   support: ['Working Class'],
   oppose: ['Corporations'],
-  changes: [{
-    path: ['factions', 'Working Class', 'taxRate'],
-    operation: 'MULTIPLY',
-    value: 0.5
-  }],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Working Class', 'taxRate'],
+      operation: 'MULTIPLY',
+      value: vale(0.5, 0.3, 0.9)
+    }];
+  },
   getWeight: function getWeight(game) {
     return 100 - game.factions['Working Class'].favorability;
   }
@@ -601,11 +721,13 @@ var policies = [
   description: "All workers deserve a living wage",
   support: ['Working Class'],
   oppose: ['Corporations'],
-  changes: [{
-    path: ['factions', 'Working Class', 'props', 'wage'],
-    operation: 'ADD',
-    value: 3
-  }],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Working Class', 'props', 'wage'],
+      operation: 'ADD',
+      value: val(3, 1, 4)
+    }];
+  },
   getWeight: function getWeight(game) {
     return 100 - game.factions['Working Class'].favorability;
   }
@@ -614,11 +736,13 @@ var policies = [
   description: 'The Working Class is the bedrock of the economy so we need to give all the ' + 'support that we can afford.',
   support: ['Working Class'],
   oppose: ['Corporations', 'Middle Class'],
-  changes: [{
-    path: ['factions', 'Working Class', 'subsidy'],
-    operation: 'ADD',
-    value: 15000
-  }],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Working Class', 'subsidy'],
+      operation: 'ADD',
+      value: val(15000, 5000, 25000)
+    }];
+  },
   useOnce: false,
   getWeight: function getWeight(game) {
     return 100 - game.factions['Working Class'].favorability;
@@ -628,11 +752,18 @@ var policies = [
   description: 'The Working Class is the bedrock of the economy so we need to give all the ' + 'support that we can afford.',
   support: ['Working Class'],
   oppose: ['Corporations', 'Middle Class'],
-  changes: [{
-    path: ['factions', 'Working Class', 'wealth'],
-    operation: 'ADD',
-    value: 100000
-  }],
+  changes: function changes(game) {
+    var handout = Math.min(val(100000, 50000, 150000));
+    return [{
+      path: ['factions', 'Working Class', 'wealth'],
+      operation: 'ADD',
+      value: handout
+    }, {
+      path: ['capital'],
+      operation: 'ADD',
+      value: -1 * handout
+    }];
+  },
   useOnce: false,
   getWeight: function getWeight(game) {
     return 100 - game.factions['Working Class'].favorability;
@@ -643,27 +774,30 @@ var policies = [
   description: "We need radical solutions to get the Working Class back on track",
   support: ['Working Class'],
   oppose: ['Corporations'],
-  changes: [{
-    path: ['factions', 'Working Class', 'wealth'],
-    operation: 'ADD',
-    value: 100000
-  }, {
-    path: ['capital'],
-    operation: 'ADD',
-    value: -100000
-  }, {
-    path: ['factions', 'Working Class', 'props', 'wage'],
-    operation: 'ADD',
-    value: 5
-  }, {
-    path: ['factions', 'Working Class', 'props', 'unemployment'],
-    operation: 'MULTIPLY',
-    value: 0.1
-  }, {
-    path: ['factions', 'Working Class', 'favorability'],
-    operation: 'ADD',
-    value: 20
-  }],
+  changes: function changes(game) {
+    var handout = Math.min(val(100000, 50000, 150000));
+    return [{
+      path: ['factions', 'Working Class', 'wealth'],
+      operation: 'ADD',
+      value: handout
+    }, {
+      path: ['capital'],
+      operation: 'ADD',
+      value: -1 * handout
+    }, {
+      path: ['factions', 'Working Class', 'props', 'wage'],
+      operation: 'ADD',
+      value: 5
+    }, {
+      path: ['factions', 'Working Class', 'props', 'unemployment'],
+      operation: 'MULTIPLY',
+      value: 0.1
+    }, {
+      path: ['factions', 'Working Class', 'favorability'],
+      operation: 'ADD',
+      value: 20
+    }];
+  },
   getWeight: function getWeight(game) {
     if (game.factions['Working Class'].favorability > 0) {
       return 1;
@@ -677,18 +811,20 @@ var policies = [
   description: "We need radical solutions to get the Working Class back on track",
   support: ['Corporations', 'Middle Class'],
   oppose: ['Working Class'],
-  changes: [{
-    path: ['factions', 'Working Class', 'population'],
-    operation: 'MULTIPLY',
-    value: 0.7
-  }, {
-    path: ['factions', 'Working Class', 'props', 'unemployment'],
-    value: 0
-  }, {
-    path: ['factions', 'Working Class', 'favorability'],
-    operation: 'ADD',
-    value: 15
-  }],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Working Class', 'population'],
+      operation: 'MULTIPLY',
+      value: val(0.7, 0.5, 0.8)
+    }, {
+      path: ['factions', 'Working Class', 'props', 'unemployment'],
+      value: 0
+    }, {
+      path: ['factions', 'Working Class', 'favorability'],
+      operation: 'ADD',
+      value: 15
+    }];
+  },
   getWeight: function getWeight(game) {
     if (game.factions['Working Class'].favorability > 0) {
       return 0;
@@ -876,7 +1012,7 @@ var gameReducer = function gameReducer(game, action) {
         game.time += 1;
         game.ticksToNextPolicy--;
         if (game.ticksToNextPolicy == -1) {
-          game.ticksToNextPolicy = randomIn(3, 6);
+          game.ticksToNextPolicy = randomIn(2, 4);
         }
 
         var months = game.time > 1 ? 'months' : 'month';
@@ -917,10 +1053,9 @@ var gameReducer = function gameReducer(game, action) {
         var corps = game.factions['Corporations'];
         var mids = game.factions['Middle Class'];
         var poors = game.factions['Working Class'];
-        // const nerds = game.factions['Intelligentsia'];
-        // const army = game.factions['Military'];
-        // const lords = game.factions['Landowners'];
-
+        var nerds = game.factions['Intelligentsia'];
+        var army = game.factions['Military'];
+        var lords = game.factions['Landowners'];
 
         // compute people hired by corporations
         var nextMidsUnemployment = mids.props.unemployment * (1 - corps.props.hiringRate);
@@ -1009,8 +1144,8 @@ var gameReducer = function gameReducer(game, action) {
         if (inventoryDeficit != 0) {
           // not enough inventory
           appendTicker(game, 'Corporations are ' + inventoryDeficit + ' short of inventory for Middle Class demand');
-          // const favorabilityDelta = Math.ceil(inventoryDeficit / mids.population * 5);
-          var favorabilityDelta = 2;
+          var favorabilityDelta = Math.ceil(inventoryDeficit / mids.population * 5);
+          // const favorabilityDelta = 2;
           mids.favorability -= favorabilityDelta;
           mids.favorabilityDelta['Not enough goods'] = -1 * favorabilityDelta / 100;
         }
@@ -1043,8 +1178,8 @@ var gameReducer = function gameReducer(game, action) {
         if (inventoryDeficit2 != 0) {
           // not enough inventory
           appendTicker(game, 'Corporations are ' + inventoryDeficit2 + ' short of inventory for Working Class demand');
-          // const favorabilityDelta = Math.ceil(inventoryDeficit2 / poors.population * 5);
-          var _favorabilityDelta = 2;
+          var _favorabilityDelta = Math.ceil(inventoryDeficit2 / poors.population * 5);
+          // const favorabilityDelta = 2;
           poors.favorability -= _favorabilityDelta;
           poors.favorabilityDelta['Not enough goods'] = -1 * _favorabilityDelta / 100;
         }
@@ -1079,28 +1214,103 @@ var gameReducer = function gameReducer(game, action) {
         corps.wealthDelta['Business profits'] = corpProfit;
         corps.wealthDelta['Taxes paid'] = -1 * corpTaxesCollected;
 
-        // compute favorability (gdp change, taxRate, wealth change, unemployment)
+        // compute rent by Middle Class
+        var midsRentCost = mids.population * lords.props.middleClassRent;
+
+        var _subtractWithDeficit8 = subtractWithDeficit(mids.wealth, midsRentCost, lords.props.middleClassRent),
+            midsRentDeficit = _subtractWithDeficit8.deficit,
+            midsRentSpent = _subtractWithDeficit8.amount;
+
+        var midsWhoCantRent = 0;
+        if (midsRentDeficit != 0) {
+          midsWhoCantRent = Math.round(midsRentDeficit / lords.props.middleClassRent);
+          appendTicker(game, 'The Middle Class is ' + displayMoney(midsRentDeficit) + ' short to afford rent. ' + (midsWhoCantRent + ' have been pushed to the Working Class'));
+          mids.population -= midsWhoCantRent;
+          mids.populationDelta['Evicted from Middle Class'] = -1 * midsWhoCantRent;
+        }
+        mids.wealth -= midsRentSpent;
+        mids.wealthDelta["Rent"] = -1 * midsRentSpent;
+
+        // compute rent by Working Class
+        var poorsRentCost = poors.population * lords.props.workingClassRent;
+
+        var _subtractWithDeficit9 = subtractWithDeficit(poors.wealth, poorsRentCost, lords.props.workingClassRent),
+            poorsRentDeficit = _subtractWithDeficit9.deficit,
+            poorsRentSpent = _subtractWithDeficit9.amount;
+
+        if (poorsRentDeficit != 0) {
+          var poorsWhoCantRent = 0;
+          poorsWhoCantRent = Math.round(poorsRentDeficit / lords.props.workingClassRent);
+          appendTicker(game, 'The Working Class is ' + displayMoney(poorsRentDeficit) + ' short to afford rent. ' + (poorsWhoCantRent + ' have been evicted'));
+          var unhousedDelta = poorsWhoCantRent / poors.population - poors.props.unhoused;
+          poors.props.unhoused = poorsWhoCantRent / poors.population;
+          if (unhousedDelta > 0) {
+            poors.props.unhousedDelta["Evicted"] = unhousedDelta;
+          } else if (unhousedDelta < 0) {
+            poors.props.unhousedDelta["Housed"] = unhousedDelta;
+          }
+        }
+        if (midsWhoCantAfford > 0) {
+          // this happens here so that poors population
+          // doesn't increase before they start renting
+          poors.population += midsWhoCantRent;
+          poors.populationDelta['Evicted from  Middle Class'] = midsWhoCantRent;
+        }
+        poors.wealth -= poorsRentSpent;
+        poors.wealthDelta["Rent"] = -1 * poorsRentSpent;
+
+        // compute income to Landowners
+        var lordsProfit = midsRentSpent + poorsRentSpent;
+        var lordsTaxesCollected = lordsProfit * lords.taxRate;
+        game.capital += lordsTaxesCollected;
+        game.capitalDelta['Landowner taxes'] = lordsTaxesCollected;
+        lords.wealth += lordsProfit - lordsTaxesCollected;
+        lords.wealthDelta['Rental profits'] = lordsProfit;
+        lords.wealthDelta['Taxes paid'] = -1 * lordsTaxesCollected;
+
+        // upkeep costs
         for (var _factionName3 in game.factions) {
           var _faction2 = game.factions[_factionName3];
-          if ((_faction2.wealth < prevWealth[_factionName3] || _faction2.wealth < 10) && (_factionName3 == 'Working Class' && _faction2.wealth < 100000 || _factionName3 != 'Working Class') && (_factionName3 == 'Middle Class' && _faction2.wealth < 250000 || _factionName3 != 'Middle Class')) {
-            _faction2.favorability -= 1;
-            _faction2.favorabilityDelta['Wealth decreasing'] = -1 / 100;
-          } else if (_faction2.wealth - prevWealth[_factionName3] > 0 && _faction2.wealth > 100) {
-            _faction2.favorability += 1;
-            _faction2.favorabilityDelta['Wealth increasing'] = 1 / 100;
-          }
+          if (_faction2.props.upkeepCosts > 0) {
+            var _subtractWithDeficit10 = subtractWithDeficit(_faction2.wealth, _faction2.props.upkeepCosts),
+                upkeepDeficit = _subtractWithDeficit10.deficit,
+                wealthSpent = _subtractWithDeficit10.amount;
 
-          if (_faction2.props.unemployment > 0.1) {
-            // const favorabilityDelta = Math.floor(faction.props.unemployment * 5);
-            var _favorabilityDelta3 = 1;
-            _faction2.favorability -= _favorabilityDelta3;
-            _faction2.favorabilityDelta['High unemployment'] = -1 * _favorabilityDelta3 / 100;
+            if (upkeepDeficit != 0) {
+              var favPenalty = Math.round(upkeepDeficit / _faction2.props.upkeepCosts * 10);
+              appendTicker(game, _factionName3 + ' can\'t afford upkeep, reducing favorability by ' + ('' + displayPercent(favPenalty / 100)));
+              _faction2.favorability -= favPenalty;
+              _faction2.favorabilityDelta['Can\'t afford upkeep'] = -1 * favPenalty / 100;
+            }
+            _faction2.wealth -= wealthSpent;
+            _faction2.wealthDelta['Upkeep Costs'] = -1 * wealthSpent;
           }
-          _faction2.favorability = clamp(_faction2.favorability, 0, 100);
         }
 
-        //
+        // compute favorability (gdp change, taxRate, wealth change, unemployment)
+        for (var _factionName4 in game.factions) {
+          var _faction3 = game.factions[_factionName4];
+          if ((_faction3.wealth < prevWealth[_factionName4] || _faction3.wealth < 10) && (_factionName4 == 'Working Class' && _faction3.wealth < 100000 || _factionName4 != 'Working Class') && (_factionName4 == 'Middle Class' && _faction3.wealth < 250000 || _factionName4 != 'Middle Class')) {
+            _faction3.favorability -= 1;
+            _faction3.favorabilityDelta['Wealth decreasing'] = -1 / 100;
+          } else if (_faction3.wealth - prevWealth[_factionName4] > 0 && _faction3.wealth > 100) {
+            _faction3.favorability += 1;
+            _faction3.favorabilityDelta['Wealth increasing'] = 1 / 100;
+          }
 
+          if (_faction3.props.unemployment > 0.1) {
+            var _favorabilityDelta3 = Math.floor(_faction3.props.unemployment * 5);
+            // const favorabilityDelta = 1;
+            _faction3.favorability -= _favorabilityDelta3;
+            _faction3.favorabilityDelta['High unemployment'] = -1 * _favorabilityDelta3 / 100;
+          }
+          if (_faction3.props.unhoused > 0) {
+            var _favorabilityDelta4 = Math.floor(_faction3.props.unhoused * 10);
+            _faction3.favorability -= _favorabilityDelta4;
+            _faction3.favorabilityDelta['Homelessness'] = -1 * _favorabilityDelta4 / 100;
+          }
+          _faction3.favorability = clamp(_faction3.favorability, 0, 100);
+        }
 
         // middle/lower class
         // compute favorability (unemployment, wealth, taxRate)
@@ -1114,6 +1324,14 @@ var gameReducer = function gameReducer(game, action) {
 
         // landowners
         // produce food, charge rent
+
+
+        // round all props that need to be
+        for (var _factionName5 in game.factions) {
+          var _faction4 = game.factions[_factionName5];
+          _faction4.population = Math.floor(_faction4.population);
+        }
+        corps.props.inventory = Math.floor(corps.props.inventory);
 
         return game;
       }
@@ -1317,7 +1535,7 @@ var initEventsSystem = function initEventsSystem(store) {
       dispatch({ type: 'SET', property: 'policy', value: chosenPolicy });
       dispatch({
         type: 'SET_MODAL',
-        modal: React.createElement(PolicyModal, { dispatch: dispatch, policy: chosenPolicy })
+        modal: React.createElement(PolicyModal, { dispatch: dispatch, policy: chosenPolicy, game: game })
       });
     }
   });
@@ -1606,13 +1824,6 @@ function Info(props) {
       game.gdp
     ),
     React.createElement(Button, {
-      label: 'Step',
-      disabled: game.policy != null,
-      onClick: function onClick() {
-        dispatch({ type: 'TICK' });
-      }
-    }),
-    React.createElement(Button, {
       id: game.tickInterval ? '' : 'PLAY',
       label: game.tickInterval ? 'Pause' : 'Play',
       disabled: game.policy != null,
@@ -1625,6 +1836,13 @@ function Info(props) {
         }
       }
     }),
+    React.createElement(Button, {
+      label: 'Step',
+      disabled: game.policy != null || game.tickInterval,
+      onClick: function onClick() {
+        dispatch({ type: 'TICK' });
+      }
+    }),
     React.createElement(
       'div',
       null,
@@ -1634,7 +1852,7 @@ function Info(props) {
         onClick: function onClick() {
           dispatch({
             type: 'SET_MODAL',
-            modal: React.createElement(PolicyModal, { dispatch: dispatch, policy: game.policy })
+            modal: React.createElement(PolicyModal, { dispatch: dispatch, policy: game.policy, game: game })
           });
         }
       })
@@ -1659,10 +1877,10 @@ function Faction(properties) {
     var displayFn = function displayFn(v) {
       return v;
     };
-    if (propName == 'unemployment' || propName == 'hiringRate') {
+    if (propName == 'unemployment' || propName == 'hiringRate' || propName == 'unhoused') {
       displayedVal = displayPercent(props[propName]);
       displayFn = displayPercent;
-    } else if (propName == 'wage' || propName == 'rent' || propName == 'price') {
+    } else if (propName == 'wage' || propName == 'rent' || propName == 'price' || propName == 'upkeepCosts' || propName == 'workingClassRent' || propName == 'middleClassRent') {
       displayedVal = displayMoney(props[propName]);
       displayFn = displayMoney;
     }
@@ -1680,13 +1898,18 @@ function Faction(properties) {
       React.createElement(Indicator, { value: props[propName] })
     ));
   }
+  var height = 187;
+  if (name == 'Corporations' || name == 'Military' || name == 'Landowners') {
+    height = 168.5;
+  }
 
   return React.createElement(
     'div',
     {
       style: {
         width: '33.3%',
-        display: 'inline-block'
+        display: 'inline-block',
+        marginBottom: 8
       }
     },
     React.createElement(
@@ -1694,7 +1917,8 @@ function Faction(properties) {
       {
         style: {
           width: '-webkit-fill-available',
-          padding: '2px'
+          padding: '2px',
+          height: height
         }
       },
       React.createElement(

@@ -25,7 +25,7 @@ const initEventsSystem = (store) => {
       dispatch({type: 'SET', property: 'policy', value: chosenPolicy});
       dispatch({
         type: 'SET_MODAL',
-        modal: <PolicyModal dispatch={dispatch} policy={chosenPolicy} />,
+        modal: <PolicyModal dispatch={dispatch} policy={chosenPolicy} game={game} />,
       });
     }
 

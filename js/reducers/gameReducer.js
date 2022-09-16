@@ -95,7 +95,7 @@ const gameReducer = (game, action) => {
       game.time += 1;
       game.ticksToNextPolicy--;
       if (game.ticksToNextPolicy == -1) {
-        game.ticksToNextPolicy = randomIn(3, 6);
+        game.ticksToNextPolicy = randomIn(2, 4);
       }
 
       let months = game.time > 1 ? 'months' : 'month';
@@ -145,9 +145,9 @@ const gameReducer = (game, action) => {
       const corps = game.factions['Corporations'];
       const mids = game.factions['Middle Class'];
       const poors = game.factions['Working Class'];
-      // const nerds = game.factions['Intelligentsia'];
-      // const army = game.factions['Military'];
-      // const lords = game.factions['Landowners'];
+      const nerds = game.factions['Intelligentsia'];
+      const army = game.factions['Military'];
+      const lords = game.factions['Landowners'];
 
 
       // compute people hired by corporations
@@ -254,8 +254,8 @@ const gameReducer = (game, action) => {
         appendTicker(game,
           `Corporations are ${inventoryDeficit} short of inventory for Middle Class demand`,
         );
-        // const favorabilityDelta = Math.ceil(inventoryDeficit / mids.population * 5);
-        const favorabilityDelta = 2;
+        const favorabilityDelta = Math.ceil(inventoryDeficit / mids.population * 5);
+        // const favorabilityDelta = 2;
         mids.favorability -= favorabilityDelta;
         mids.favorabilityDelta['Not enough goods'] = -1 * favorabilityDelta / 100;
       }
@@ -294,8 +294,8 @@ const gameReducer = (game, action) => {
         appendTicker(game,
           `Corporations are ${inventoryDeficit2} short of inventory for Working Class demand`,
         );
-        // const favorabilityDelta = Math.ceil(inventoryDeficit2 / poors.population * 5);
-        const favorabilityDelta = 2;
+        const favorabilityDelta = Math.ceil(inventoryDeficit2 / poors.population * 5);
+        // const favorabilityDelta = 2;
         poors.favorability -= favorabilityDelta;
         poors.favorabilityDelta['Not enough goods'] = -1 * favorabilityDelta / 100;
       }
@@ -331,6 +331,97 @@ const gameReducer = (game, action) => {
       corps.wealthDelta['Taxes paid'] = -1 * corpTaxesCollected;
 
 
+      // compute rent by Middle Class
+      const midsRentCost = mids.population * lords.props.middleClassRent;
+      let {
+        // result: nextMidsWealth,
+        deficit: midsRentDeficit,
+        amount: midsRentSpent,
+      } = subtractWithDeficit(mids.wealth, midsRentCost, lords.props.middleClassRent);
+      let midsWhoCantRent = 0;
+      if (midsRentDeficit != 0) {
+        midsWhoCantRent = Math.round(
+          midsRentDeficit / lords.props.middleClassRent
+        );
+        appendTicker(game,
+          `The Middle Class is ${displayMoney(midsRentDeficit)} short to afford rent. ` +
+          `${midsWhoCantRent} have been pushed to the Working Class`
+        );
+        mids.population -= midsWhoCantRent;
+        mids.populationDelta['Evicted from Middle Class'] = -1 * midsWhoCantRent;
+      }
+      mids.wealth -= midsRentSpent;
+      mids.wealthDelta["Rent"] = -1 * midsRentSpent;
+
+
+      // compute rent by Working Class
+      const poorsRentCost = poors.population * lords.props.workingClassRent;
+      let {
+        // result: nextMidsWealth,
+        deficit: poorsRentDeficit,
+        amount: poorsRentSpent,
+      } = subtractWithDeficit(poors.wealth, poorsRentCost, lords.props.workingClassRent);
+      if (poorsRentDeficit != 0) {
+        let poorsWhoCantRent = 0;
+        poorsWhoCantRent = Math.round(
+          poorsRentDeficit / lords.props.workingClassRent
+        );
+        appendTicker(game,
+          `The Working Class is ${displayMoney(poorsRentDeficit)} short to afford rent. ` +
+          `${poorsWhoCantRent} have been evicted`,
+        );
+        const unhousedDelta = poorsWhoCantRent / poors.population - poors.props.unhoused;
+        poors.props.unhoused = poorsWhoCantRent / poors.population;
+        if (unhousedDelta > 0) {
+          poors.props.unhousedDelta["Evicted"] = unhousedDelta;
+        } else if (unhousedDelta < 0) {
+          poors.props.unhousedDelta["Housed"] = unhousedDelta;
+        }
+
+      }
+      if (midsWhoCantAfford > 0) { // this happens here so that poors population
+                                   // doesn't increase before they start renting
+        poors.population += midsWhoCantRent;
+        poors.populationDelta['Evicted from  Middle Class'] = midsWhoCantRent;
+      }
+      poors.wealth -= poorsRentSpent;
+      poors.wealthDelta["Rent"] = -1 * poorsRentSpent;
+
+
+      // compute income to Landowners
+      const lordsProfit = midsRentSpent + poorsRentSpent;
+      const lordsTaxesCollected = lordsProfit * lords.taxRate;
+      game.capital += lordsTaxesCollected;
+      game.capitalDelta['Landowner taxes'] = lordsTaxesCollected;
+      lords.wealth += lordsProfit - lordsTaxesCollected;
+      lords.wealthDelta['Rental profits'] = lordsProfit;
+      lords.wealthDelta['Taxes paid'] = -1 * lordsTaxesCollected;
+
+
+      // upkeep costs
+      for (const factionName in game.factions) {
+        const faction = game.factions[factionName];
+        if (faction.props.upkeepCosts > 0) {
+          let {
+            // result: nextWealth,
+            deficit: upkeepDeficit,
+            amount: wealthSpent,
+          } = subtractWithDeficit(faction.wealth, faction.props.upkeepCosts);
+          if (upkeepDeficit != 0) {
+            const favPenalty = Math.round(upkeepDeficit / faction.props.upkeepCosts * 10);
+            appendTicker(game,
+              `${factionName} can't afford upkeep, reducing favorability by ` +
+              `${displayPercent(favPenalty / 100)}`,
+            );
+            faction.favorability -= favPenalty;
+            faction.favorabilityDelta['Can\'t afford upkeep'] = -1 * favPenalty / 100;
+          }
+          faction.wealth -= wealthSpent;
+          faction.wealthDelta['Upkeep Costs'] = -1 * wealthSpent;
+        }
+      }
+
+
       // compute favorability (gdp change, taxRate, wealth change, unemployment)
       for (const factionName in game.factions) {
         const faction = game.factions[factionName];
@@ -356,15 +447,18 @@ const gameReducer = (game, action) => {
         }
 
         if (faction.props.unemployment > 0.1) {
-          // const favorabilityDelta = Math.floor(faction.props.unemployment * 5);
-          const favorabilityDelta = 1;
+          const favorabilityDelta = Math.floor(faction.props.unemployment * 5);
+          // const favorabilityDelta = 1;
           faction.favorability -= favorabilityDelta;
           faction.favorabilityDelta['High unemployment'] = -1 * favorabilityDelta / 100;
         }
+        if (faction.props.unhoused > 0) {
+          const favorabilityDelta = Math.floor(faction.props.unhoused * 10);
+          faction.favorability -= favorabilityDelta;
+          faction.favorabilityDelta['Homelessness'] = -1 * favorabilityDelta / 100;
+        }
         faction.favorability = clamp(faction.favorability, 0, 100);
       }
-
-      //
 
 
       // middle/lower class
@@ -379,6 +473,15 @@ const gameReducer = (game, action) => {
 
       // landowners
       // produce food, charge rent
+
+
+      // round all props that need to be
+      for (const factionName in game.factions) {
+        const faction = game.factions[factionName];
+        faction.population = Math.floor(faction.population);
+      }
+      corps.props.inventory = Math.floor(corps.props.inventory);
+
 
       return game;
     }

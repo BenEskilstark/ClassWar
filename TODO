@@ -1,23 +1,27 @@
 
 - - - - - PLAYTEST - - - - - -
-  - policies for increasing capital when it's low
-    - reducing subsidies
-    - make raising taxes more likely (on richest factions?)
-  - policy changes need to be a function
-    - that randomized vals can get called every time
-    - one-time cash handouts need to check that the gov can afford
-  - too easy to make everyone happy with current wealth -> favorability rules?
-    - increase favorability penalties from other issues
+  - pay rent before buying goods?
+  - landowners are just raking it in
+  - have description as first line of hovercards?
+  - add landowners/intelligentsia/army to support/oppose for all policies
+  - many more policies
+    - raise/lower rents
+    - raise/lower army/intelligentsia/landowner subsidies
+    - build university / fund movie
+    - reclaim money from landowners
+    - draft working class into army / send home
+
 
 - - - - - - BUGS - - - - - -
   - auto-playing ticks still hides indicators when policy pops up
-  - keep population/inventory/etc rounded
-  - need dicts for money/percents
-    - in policy_change, in policy display, in game ui
-    - specifically favorability
+  - also capital indicator goes away when a new policy appears
 
 
 - - - - - SIMULATION - - - - - -
+  - implement game over
+    - 2 factions at 0% favorability
+    - display # turns
+    - function to get gov type based on policies (and favorability?)
   - favorability changes
     - consequences of unfavorability per faction
       - middle class -> strikes
@@ -26,50 +30,36 @@
       - poor -> ?
       - middle class -> greater skill
       - corps -> greater production
-  - add in additional factions
-    - landowners
-      - charge rents middle and working class
-      - produce food?
-      - working class can be unhoused (middle class -> working class when can't afford)
-    - intelligentsia
-      - subsidized
-      - increase middle class skill occasionally
-      - increase middle/working class favorability occasionally
-    - army
-      - big cost center
-      - can employ working class
-    - maybe they appear later?
-      - start with landowners + working class?
-  - construction:
-    - how to compute GDP - exports/imports? what is the point?
-    - how does corp population fit in?
 
 
 - - - - - - POLICIES - - - - - -
   - policy system
     - allow some policies to be picked multiple times and others to only be picked once
-    - make it so randomized change values are different every time that policy comes up
     - maybe have a hard-coded smaller set of policies to choose from at first
     - procedurally generate policies?
-  - many policies (at least one per property)
-
-
-- - - - - POLISH/FLAVOR - - - - -
-  - print out a few messages at the start with instructions
-    - welcome dear leader ... hopefully you can last longer than the last one
-    - but try to incorporate name of the game in there
-  - ticker
-    - make ticker scrollable
-    - months in power should be years + months (weeks?)
 
 
 - - - - - - UI - - - - - -
+  - rename Factions to Class?
   - add government type to main info based on favorability
     (and wealth? or history of favorable policies)
   - colored indicator arrow component based off of Plot
     - get up and down arrows to look the same
   - better printing of faction props
   - better lay out of the policy UI and percents/dollars and buttons
+
+
+- - - - - POLISH/FLAVOR - - - - -
+  - need dicts for money/percents
+    - in policy_change, in policy display, in game ui
+    - specifically favorability
+  - print out a few messages at the start with instructions
+    - welcome dear leader ... hopefully you can last longer than the last one
+    - but try to incorporate name of the game in there (Command Economy 2?)
+  - ticker
+    - months in power should be years + months (weeks?)
+
+
 
 
 

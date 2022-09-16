@@ -126,13 +126,6 @@ function Info(props): React.Node {
         GDP: ${game.gdp}
       </div>
       <Button
-        label={'Step'}
-        disabled={game.policy != null}
-        onClick={() => {
-          dispatch({type: 'TICK'});
-        }}
-      />
-      <Button
         id={game.tickInterval ? '' : 'PLAY'}
         label={game.tickInterval ? 'Pause' : 'Play'}
         disabled={game.policy != null}
@@ -145,6 +138,13 @@ function Info(props): React.Node {
           }
         }}
       />
+      <Button
+        label={'Step'}
+        disabled={game.policy != null || game.tickInterval}
+        onClick={() => {
+          dispatch({type: 'TICK'});
+        }}
+      />
       <div>
         <Button
           label="View Policy Proposal"
@@ -152,7 +152,7 @@ function Info(props): React.Node {
           onClick={() => {
             dispatch({
               type: 'SET_MODAL',
-              modal: <PolicyModal dispatch={dispatch} policy={game.policy} />,
+              modal: <PolicyModal dispatch={dispatch} policy={game.policy} game={game} />,
             });
           }}
         />
@@ -172,11 +172,15 @@ function Faction(properties): React.Node {
     if (propName.slice(-5) == 'Delta') continue;
     let displayedVal = props[propName];
     let displayFn = (v) => v;
-    if (propName == 'unemployment' || propName == 'hiringRate') {
+    if (
+      propName == 'unemployment' || propName == 'hiringRate' || propName == 'unhoused'
+    ) {
       displayedVal = displayPercent(props[propName]);
       displayFn = displayPercent;
     } else if (
-      propName == 'wage' || propName == 'rent' || propName == 'price'
+      propName == 'wage' || propName == 'rent' || propName == 'price' ||
+      propName == 'upkeepCosts' || propName == 'workingClassRent' ||
+      propName == 'middleClassRent'
     ) {
       displayedVal = displayMoney(props[propName]);
       displayFn = displayMoney;
@@ -191,18 +195,24 @@ function Faction(properties): React.Node {
       </Value>
     );
   }
+  let height = 187;
+  if (name == 'Corporations' || name == 'Military' || name == 'Landowners') {
+    height = 168.5;
+  }
 
   return (
     <div
       style={{
         width: '33.3%',
         display: 'inline-block',
+        marginBottom: 8,
       }}
     >
     <InfoCard
       style={{
         width: '-webkit-fill-available',
         padding: '2px',
+        height,
       }}
     >
       <div><b>{name}</b></div>
