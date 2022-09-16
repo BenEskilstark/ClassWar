@@ -1,13 +1,9 @@
 
 - - - - - PLAYTEST - - - - - -
-  - pay rent before buying goods?
-  - landowners are just raking it in
   - have description as first line of hovercards?
-  - add landowners/intelligentsia/army to support/oppose for all policies
   - policies should be more likely based on wealth/wealthDelta of factions
   - many more policies
-    - raise/lower rents
-    - raise/lower army/intelligentsia/landowner subsidies
+    - raise army/intelligentsia/landowner subsidies
     - build university / fund movie
     - reclaim money from landowners
     - draft working class into army / send home
@@ -25,8 +21,11 @@
     - function to get gov type based on policies (and favorability?)
   - favorability changes
     - consequences of unfavorability per faction
-      - middle class -> strikes
+      - middle/working class -> strikes
       - corps -> raising prices
+      - landowners -> raising rents
+      - military ->
+      - intelligentsia -> leave (reducing bonuses?)
     - bonuses for high favorability ?
       - poor -> ?
       - middle class -> greater skill
@@ -51,6 +50,7 @@
 
 
 - - - - - POLISH/FLAVOR - - - - -
+  - have factions at/near 0% favorability blink or something
   - need dicts for money/percents
     - in policy_change, in policy display, in game ui
     - specifically favorability

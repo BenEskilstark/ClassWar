@@ -147,6 +147,88 @@ const policies = [
     },
   },
   {
+    name: 'Reduce Middle Class Subsidies',
+    description: 'We must reel in the nanny state and keep the money for more important ' +
+      'societal projects.',
+    support: ['Landowners', 'Corporations', 'Military'],
+    oppose: ['Middle Class'],
+    changes: (game) => {
+      return [{
+        path: ['factions', 'Middle Class', 'subsidy'],
+        operation: 'MULTIPLY',
+        value: val(0.5, 0.2, 0.8),
+      }];
+    },
+    getWeight: (game) => {
+      let mult = 1;
+      if (game.capital < 100000) {
+        mult = 4;
+      }
+      return mult * (100 - game.factions['Corporations'].favorability);
+    },
+  },
+  {
+    name: 'Reduce Working Class Subsidies',
+    description: 'We must reel in the nanny state and keep the money for more important ' +
+      'societal projects.',
+    support: ['Landowners', 'Corporations', 'Military'],
+    oppose: ['Working Class'],
+    changes: (game) => {
+      return [{
+        path: ['factions', 'Working Class', 'subsidy'],
+        operation: 'MULTIPLY',
+        value: val(0.5, 0.2, 0.8),
+      }];
+    },
+    getWeight: (game) => {
+      let mult = 1;
+      if (game.capital < 100000) {
+        mult = 4;
+      }
+      return mult * (100 - game.factions['Corporations'].favorability);
+    },
+  },
+  {
+    name: 'Reduce Subsidy to Intelligentsia',
+    description: 'These elitists are wasting money.',
+    support: ['Landowners', 'Corporations', 'Military', 'Working Class'],
+    oppose: ['Intelligentsia'],
+    changes: (game) => {
+      return [{
+        path: ['factions', 'Intelligentsia', 'subsidy'],
+        operation: 'MULTIPLY',
+        value: val(0.5, 0.4, 0.8),
+      }];
+    },
+    getWeight: (game) => {
+      let mult = 1;
+      if (game.capital < 100000) {
+        mult = 4;
+      }
+      return mult * (100 - game.factions['Corporations'].favorability);
+    },
+  },
+  {
+    name: 'Reduce Subsidy to Military',
+    description: 'Stop the warmongering and focus on what matters!',
+    support: ['Intelligentsia'],
+    oppose: ['Military'],
+    changes: (game) => {
+      return [{
+        path: ['factions', 'Military', 'subsidy'],
+        operation: 'MULTIPLY',
+        value: val(0.5, 0.4, 0.8),
+      }];
+    },
+    getWeight: (game) => {
+      let mult = 1;
+      if (game.capital < 100000) {
+        mult = 4;
+      }
+      return mult * (100 - game.factions['Intelligentsia'].favorability);
+    },
+  },
+  {
     name: 'Raise Middle Class Tax Rate',
     description: "To balance the budget, we'll have to ask for a fairer share from " +
       "the more privileged among us.",
@@ -335,7 +417,7 @@ const policies = [
     description: 'Business is the bedrock of the economy so we need to give all the ' +
       'support that we can afford.',
     support: ['Corporations'],
-    oppose: ['Middle Class', 'Working Class'],
+    oppose: ['Intelligentsia', 'Middle Class', 'Working Class'],
     changes: (game) => {
       const value = Math.min(val(250000, 100000, 500000), game.capital);
       return [
@@ -361,7 +443,7 @@ const policies = [
     isRadical: true,
     description: "We need radical solutions to save the Corporations",
     support: ['Corporations'],
-    oppose: ['Working Class', 'Middle Class'],
+    oppose: ['Intelligentsia', 'Working Class', 'Middle Class'],
     changes: (game) => {
       const handout = Math.min(val(500000, 250000, 1000000), game.capital);
       return [
@@ -459,7 +541,7 @@ const policies = [
     description: 'The Middle Class is the bedrock of the economy so we need to give all the ' +
       'support that we can afford.',
     support: ['Middle Class'],
-    oppose: ['Corporations', 'Working Class'],
+    oppose: ['Corporations', 'Landowners', 'Working Class'],
     changes: (game) => {
       const handout = Math.min(val(50000, 50000, 150000), game.capital);
       return [
@@ -501,7 +583,7 @@ const policies = [
     isRadical: true,
     description: "We need radical solutions to get the Middle Class back on track",
     support: ['Middle Class'],
-    oppose: ['Corporations', 'Working Class'],
+    oppose: ['Corporations', 'Landowners', 'Military'],
     changes: (game) => {
       const handout = Math.min(val(50000, 50000, 250000), game.capital);
       return [
@@ -568,7 +650,7 @@ const policies = [
     name: 'Raise Working Class Wages',
     description: "All workers deserve a living wage",
     support: ['Working Class'],
-    oppose: ['Corporations'],
+    oppose: ['Corporations', 'Landowners'],
     changes: (game) => {
       return [{
         path: ['factions', 'Working Class', 'props', 'wage'],
@@ -619,7 +701,7 @@ const policies = [
     description: 'The Working Class is the bedrock of the economy so we need to give all the ' +
       'support that we can afford.',
     support: ['Working Class'],
-    oppose: ['Corporations', 'Middle Class'],
+    oppose: ['Corporations', 'Landowners'],
     changes: (game) => {
       const handout = Math.min(val(100000, 50000, 150000), game.capital);
       return [
@@ -645,7 +727,7 @@ const policies = [
     isRadical: true,
     description: "We need radical solutions to get the Working Class back on track",
     support: ['Working Class'],
-    oppose: ['Corporations'],
+    oppose: ['Corporations', 'Landowners', 'Military'],
     changes: (game) => {
       const handout = Math.min(val(100000, 50000, 150000), game.capital);
       return [
@@ -688,7 +770,7 @@ const policies = [
     name: "Break the Strike!",
     isRadical: true,
     description: "We need radical solutions to get the Working Class back on track",
-    support: ['Corporations', 'Middle Class'],
+    support: ['Corporations', 'Landowners', 'Military'],
     oppose: ['Working Class'],
     changes: (game) => {
       return [
