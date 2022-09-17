@@ -95,7 +95,7 @@ const gameReducer = (game, action) => {
       game.time += 1;
       game.ticksToNextPolicy--;
       if (game.ticksToNextPolicy == -1) {
-        game.ticksToNextPolicy = randomIn(1, 4);
+        game.ticksToNextPolicy = 0; // randomIn(1, 4);
       }
 
       let months = game.time > 1 ? 'months' : 'month';
@@ -481,6 +481,7 @@ const gameReducer = (game, action) => {
           faction.favorabilityDelta['Homelessness'] = -1 * favorabilityDelta / 100;
         }
         faction.favorability = clamp(faction.favorability, 0, 100);
+        faction.favTotal += faction.favorability;
       }
 
 

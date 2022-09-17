@@ -72,12 +72,28 @@ const handleGameLoss = (store, dispatch, state, dislikes): void => {
   };
   const buttons = [returnButton, resetButton];
 
+  const favAvgs = {};
+  let largestAvg = 0;
+  let largestFaction = 'Government';
+  for (const factionName in game.factions) {
+    const faction = game.factions[factionName];
+    favAvgs[factionName] = faction.favTotal / game.time;
+    if (favAvgs[factionName] > largestAvg) {
+      largestAvg = favAvgs[factionName];
+      largestFaction = factionName;
+    }
+  }
+  console.log(favAvgs);
   const body = (
     <div>
     {`You are too unpopular and the ${dislikes[0]} and the ${dislikes[1]} teamed up to
     overthrow you. You survived in power for ${game.time} months`}
+    <Divider />
+    {`The faction most favorable towards you was ${largestFaction} with
+    ${largestAvg.toFixed(2)} average favorability`}
     </div>
   );
+
 
   dispatch({type: 'SET_MODAL',
     modal: (<Modal

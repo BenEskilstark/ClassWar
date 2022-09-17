@@ -1,13 +1,18 @@
 
 - - - - - PLAYTEST - - - - - -
+  - just can't raise prices without raising wages for working class
+  - too many policies that punish working/middle when corps are doing poorly don't
+    actually help the corporations
   - have description as first line of hovercards?
   - also hovercard description of each faction on their name
   - policies should be more likely based on wealth/wealthDelta of factions
+    - policies that reduce benefits should be inverse weighted
   - landowners still suck up all the wealth
   - skill of middle class just doesn't seem to matter
   - awkward when one policy is clearly necessary to survive but won't get recommended
   - upkeepCosts just erase money
   - what's stopping strategy of just always choosing policy to help poorest faction?
+    - policies need more/nuanced changes
   - worker's wage must be more than (price * demand + rent)
     - how else can corporations make money to afford this pay?
   - policy to print money (but increase prices/rents)
@@ -20,8 +25,6 @@
 
 - - - - - SIMULATION - - - - - -
   - implement game over
-    - 2 factions at 0% favorability
-    - display # turns
     - function to get gov type based on policies (and favorability?)
   - history
     - total favorability across all turns
@@ -49,6 +52,7 @@
 
 - - - - - - UI - - - - - -
   - rename Factions to Class?
+  - View Policy button should hide it when clicked again
   - add government type to main info based on favorability
     (and wealth? or history of favorable policies)
   - colored indicator arrow component based off of Plot

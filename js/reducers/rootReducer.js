@@ -70,7 +70,7 @@ const initGameState = () => {
     gdpDelta: {},
 
     ticker: ['Welcome to The Command Economy'],
-    ticksToNextPolicy: 3,
+    ticksToNextPolicy: 0,
     time: 0,
 
     policy: null,

@@ -295,18 +295,19 @@ var config = {
   msPerTick: 1000,
   maxTickerLength: 7,
 
-  capital: 3500000,
+  capital: 5000000,
 
   subsidyDeficitMult: 5,
   wagesDeficitMult: 5,
 
   factions: (_factions = {}, _defineProperty(_factions, 'Corporations', {
     name: 'Corporations',
-    wealth: 2500000,
+    wealth: 3500000,
     taxRate: val(0.2, 0, 0.4),
     subsidy: val(0, 10000, 50000),
     population: val(50, 1, 100, true),
     favorability: 50,
+    favTotal: 0,
     props: {
       hiringRate: 0.1,
       inventory: 1000000,
@@ -319,6 +320,7 @@ var config = {
     subsidy: val(0, 25000, 75000),
     population: val(500, 1000, 5000, true),
     favorability: 50,
+    favTotal: 0,
     props: {
       upkeepCosts: val(25000, 25000, 50000) // cost per turn from their wealth
     }
@@ -326,9 +328,10 @@ var config = {
     name: 'Landowners',
     wealth: 1000000,
     taxRate: val(0.2, 0.2, 0.6),
-    subsidy: val(0, 10000, 50000),
+    subsidy: val(0, 1000, 5000),
     population: val(50, 1, 100, true),
     favorability: 50,
+    favTotal: 0,
     props: {
       workingClassRent: val(2, 1, 3), // rent charged to working class per turn
       middleClassRent: val(10, 5, 10) // charged to middle class per turn
@@ -340,9 +343,10 @@ var config = {
     subsidy: val(0, 0, 10000),
     population: val(10000, 1000, 50000),
     favorability: 50,
+    favTotal: 0,
     props: {
       unemployment: val(0.1, 0, 0.3), // rate of not employed
-      wage: val(3, 2, 6), // wage going to each employed person
+      wage: val(3, 4, 7), // wage going to each employed person
       demand: 1, // how much inventory each person wants
       unhoused: 0 // can't afford housing
     }
@@ -353,9 +357,10 @@ var config = {
     subsidy: val(0, 5000, 15000),
     population: val(1000, 2000, 10000),
     favorability: 50,
+    favTotal: 0,
     props: {
       unemployment: val(0.1, 0, 0.3), // rate of not employed
-      wage: val(10, 20, 30, true), // wage going to each employed person
+      wage: val(10, 25, 35, true), // wage going to each employed person
       demand: val(2, 4, 5), // how much inventory each person wants
       skill: 3 // val(5, 3, 4), // how much more productive than working class
     }
@@ -366,6 +371,7 @@ var config = {
     subsidy: val(0, 25000, 75000),
     population: val(1000, 100, 10000),
     favorability: 50,
+    favTotal: 0,
     props: {
       upkeepCosts: val(25000, 25000, 50000), // cost per turn from their wealth
       universities: 1, // makes skill increases more likely
@@ -1340,7 +1346,7 @@ var gameReducer = function gameReducer(game, action) {
         game.time += 1;
         game.ticksToNextPolicy--;
         if (game.ticksToNextPolicy == -1) {
-          game.ticksToNextPolicy = randomIn(1, 4);
+          game.ticksToNextPolicy = 0; // randomIn(1, 4);
         }
 
         var months = game.time > 1 ? 'months' : 'month';
@@ -1654,6 +1660,7 @@ var gameReducer = function gameReducer(game, action) {
             _faction3.favorabilityDelta['Homelessness'] = -1 * _favorabilityDelta4 / 100;
           }
           _faction3.favorability = clamp(_faction3.favorability, 0, 100);
+          _faction3.favTotal += _faction3.favorability;
         }
 
         // middle/lower class
@@ -1815,7 +1822,7 @@ var initGameState = function initGameState() {
     gdpDelta: {},
 
     ticker: ['Welcome to The Command Economy'],
-    ticksToNextPolicy: 3,
+    ticksToNextPolicy: 0,
     time: 0,
 
     policy: null,
@@ -1967,10 +1974,24 @@ var handleGameLoss = function handleGameLoss(store, dispatch, state, dislikes) {
   };
   var buttons = [returnButton, resetButton];
 
+  var favAvgs = {};
+  var largestAvg = 0;
+  var largestFaction = 'Government';
+  for (var factionName in game.factions) {
+    var faction = game.factions[factionName];
+    favAvgs[factionName] = faction.favTotal / game.time;
+    if (favAvgs[factionName] > largestAvg) {
+      largestAvg = favAvgs[factionName];
+      largestFaction = factionName;
+    }
+  }
+  console.log(favAvgs);
   var body = React.createElement(
     'div',
     null,
-    'You are too unpopular and the ' + dislikes[0] + ' and the ' + dislikes[1] + ' teamed up to\n    overthrow you. You survived in power for ' + game.time + ' months'
+    'You are too unpopular and the ' + dislikes[0] + ' and the ' + dislikes[1] + ' teamed up to\n    overthrow you. You survived in power for ' + game.time + ' months',
+    React.createElement(Divider, null),
+    'The faction most favorable towards you was ' + largestFaction + ' with\n    ' + largestAvg.toFixed(2) + ' average favorability'
   );
 
   dispatch({ type: 'SET_MODAL',

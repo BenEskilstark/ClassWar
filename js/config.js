@@ -50,6 +50,7 @@ const config = {
       subsidy: val(0, 10000, 50000),
       population: val(50, 1, 100, true),
       favorability: 50,
+      favTotal: 0,
       props: {
         hiringRate: 0.1,
         inventory: 1000000,
@@ -64,6 +65,7 @@ const config = {
       subsidy: val(0, 25000, 75000),
       population: val(500, 1000, 5000, true),
       favorability: 50,
+      favTotal: 0,
       props: {
         upkeepCosts: val(25000, 25000, 50000), // cost per turn from their wealth
       },
@@ -76,6 +78,7 @@ const config = {
      subsidy: val(0, 1000, 5000),
       population: val(50, 1, 100, true),
       favorability: 50,
+      favTotal: 0,
       props: {
         workingClassRent: val(2, 1, 3), // rent charged to working class per turn
         middleClassRent: val(10, 5, 10), // charged to middle class per turn
@@ -89,6 +92,7 @@ const config = {
       subsidy: val(0, 0, 10000),
       population: val(10000, 1000, 50000),
       favorability: 50,
+      favTotal: 0,
       props: {
         unemployment: val(0.1, 0, 0.3), // rate of not employed
         wage: val(3, 4, 7), // wage going to each employed person
@@ -104,6 +108,7 @@ const config = {
       subsidy: val(0, 5000, 15000),
       population: val(1000, 2000, 10000),
       favorability: 50,
+      favTotal: 0,
       props: {
         unemployment: val(0.1, 0, 0.3), // rate of not employed
         wage: val(10, 25, 35, true), // wage going to each employed person
@@ -119,6 +124,7 @@ const config = {
       subsidy: val(0, 25000, 75000),
       population: val(1000, 100, 10000),
       favorability: 50,
+      favTotal: 0,
       props: {
         upkeepCosts: val(25000, 25000, 50000), // cost per turn from their wealth
         universities: 1, // makes skill increases more likely
