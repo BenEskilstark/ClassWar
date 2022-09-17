@@ -2108,6 +2108,10 @@ function Game(props) {
     return factions;
   }, [game.time, game.policy != null]);
 
+  var govInfo = useMemo(function () {
+    return React.createElement(Info, { game: game, dispatch: dispatch });
+  }, [game.time, game.policy != null]);
+
   return React.createElement(
     'div',
     null,
@@ -2120,7 +2124,7 @@ function Game(props) {
           marginBottom: 6
         }
       },
-      React.createElement(Info, { game: game, dispatch: dispatch }),
+      govInfo,
       React.createElement(Ticker, { game: game })
     ),
     factions

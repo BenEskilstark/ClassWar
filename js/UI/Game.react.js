@@ -49,6 +49,12 @@ function Game(props: Props): React.Node {
     return factions;
   }, [game.time, game.policy != null]);
 
+  const govInfo = useMemo(() => {
+    return (
+      <Info game={game} dispatch={dispatch} />
+    );
+  }, [game.time, game.policy != null]);
+
   return (
     <div>
       <div
@@ -58,7 +64,7 @@ function Game(props: Props): React.Node {
           marginBottom: 6,
         }}
       >
-        <Info game={game} dispatch={dispatch} />
+        {govInfo}
         <Ticker game={game} />
       </div>
       {factions}
@@ -122,9 +128,6 @@ function Info(props): React.Node {
       <Value deltas={game.capitalDelta} displayFn={displayMoney}>
         Capital: {displayMoney(game.capital)} <Indicator value={game.capital} />
       </Value>
-      <div>
-        GDP: ${game.gdp}
-      </div>
       <Button
         id={game.tickInterval ? '' : 'PLAY'}
         label={game.tickInterval ? 'Pause' : 'Play'}
