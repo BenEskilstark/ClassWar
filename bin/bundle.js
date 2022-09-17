@@ -278,27 +278,39 @@ var val = function val(base, min, max, isNormal) {
   return randomIn(min * mult, max * mult) / mult;
 };
 
+var factionHealth = function factionHealth(game) {
+  var scores = {};
+  for (var factionName in game.factions) {
+    var faction = game.factions[factionName];
+    var wealthScore = 10000000 * 1 / (faction.wealth + 1);
+    scores[factionName] = 100 - faction.favorability + wealthScore;
+  }
+  return scores;
+};
+
+window.dire = factionHealth;
+
 var config = {
   isRandomized: IS_RANDOMIZED,
   msPerTick: 1000,
   maxTickerLength: 7,
 
-  capital: 2500000,
+  capital: 3500000,
 
   subsidyDeficitMult: 5,
   wagesDeficitMult: 5,
 
   factions: (_factions = {}, _defineProperty(_factions, 'Corporations', {
     name: 'Corporations',
-    wealth: 1500000,
+    wealth: 2500000,
     taxRate: val(0.2, 0, 0.4),
     subsidy: val(0, 10000, 50000),
     population: val(50, 1, 100, true),
     favorability: 50,
     props: {
       hiringRate: 0.1,
-      inventory: 50000,
-      price: val(5, 2, 7)
+      inventory: 1000000,
+      price: val(5, 3, 6)
     }
   }), _defineProperty(_factions, 'Military', {
     name: 'Military',
@@ -339,13 +351,13 @@ var config = {
     wealth: 750000,
     taxRate: val(0.4, 0, 0.4),
     subsidy: val(0, 5000, 15000),
-    population: val(1000, 100, 10000),
+    population: val(1000, 2000, 10000),
     favorability: 50,
     props: {
       unemployment: val(0.1, 0, 0.3), // rate of not employed
-      wage: val(10, 2, 30, true), // wage going to each employed person
-      demand: val(2, 2, 5), // how much inventory each person wants
-      skill: val(5, 3, 8) // how much more productive than working class employed person is
+      wage: val(10, 20, 30, true), // wage going to each employed person
+      demand: val(2, 4, 5), // how much inventory each person wants
+      skill: 3 // val(5, 3, 4), // how much more productive than working class
     }
   }), _defineProperty(_factions, 'Intelligentsia', {
     name: 'Intelligentsia',
@@ -382,6 +394,82 @@ var policies = [
       mult = 4;
     }
     return mult * (100 - game.factions['Working Class'].favorability);
+  }
+}, {
+  name: 'Reduce Middle Class Subsidies',
+  description: 'We must reel in the nanny state and keep the money for more important ' + 'societal projects.',
+  support: ['Landowners', 'Corporations', 'Military'],
+  oppose: ['Middle Class'],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Middle Class', 'subsidy'],
+      operation: 'MULTIPLY',
+      value: val(0.5, 0.2, 0.8)
+    }];
+  },
+  getWeight: function getWeight(game) {
+    var mult = 1;
+    if (game.capital < 100000) {
+      mult = 4;
+    }
+    return mult * (100 - game.factions['Corporations'].favorability);
+  }
+}, {
+  name: 'Reduce Working Class Subsidies',
+  description: 'We must reel in the nanny state and keep the money for more important ' + 'societal projects.',
+  support: ['Landowners', 'Corporations', 'Military'],
+  oppose: ['Working Class'],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Working Class', 'subsidy'],
+      operation: 'MULTIPLY',
+      value: val(0.5, 0.2, 0.8)
+    }];
+  },
+  getWeight: function getWeight(game) {
+    var mult = 1;
+    if (game.capital < 100000) {
+      mult = 4;
+    }
+    return mult * (100 - game.factions['Corporations'].favorability);
+  }
+}, {
+  name: 'Reduce Subsidy to Intelligentsia',
+  description: 'These elitists are wasting money.',
+  support: ['Landowners', 'Corporations', 'Military', 'Working Class'],
+  oppose: ['Intelligentsia'],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Intelligentsia', 'subsidy'],
+      operation: 'MULTIPLY',
+      value: val(0.5, 0.4, 0.8)
+    }];
+  },
+  getWeight: function getWeight(game) {
+    var mult = 1;
+    if (game.capital < 100000) {
+      mult = 4;
+    }
+    return mult * (100 - game.factions['Corporations'].favorability);
+  }
+}, {
+  name: 'Reduce Subsidy to Military',
+  description: 'Stop the warmongering and focus on what matters!',
+  support: ['Intelligentsia'],
+  oppose: ['Military'],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Military', 'subsidy'],
+      operation: 'MULTIPLY',
+      value: val(0.5, 0.4, 0.8)
+    }];
+  },
+  getWeight: function getWeight(game) {
+    var mult = 1;
+    if (game.capital < 100000) {
+      mult = 4;
+    }
+    return mult * (100 - game.factions['Intelligentsia'].favorability);
   }
 }, {
   name: 'Raise Middle Class Tax Rate',
@@ -458,6 +546,54 @@ var policies = [
       mult = 5;
     }
     return mult * (100 - game.factions['Intelligentsia'].favorability);
+  }
+}, {
+  name: 'Reclaim Landowners money',
+  description: "To balance the budget, we'll have to ask for a fairer share from " + "the richest among us",
+  support: ['Working Class', 'Middle Class', 'Intelligentsia'],
+  oppose: ['Landowners'],
+  changes: function changes(game) {
+    var value = Math.min(val(250000, 50000, 500000), game.factions.Landowners.wealth);
+    return [{
+      path: ['factions', 'Landowners', 'wealth'],
+      operation: 'ADD',
+      value: -1 * value
+    }, {
+      path: ['capital'],
+      operation: 'ADD',
+      value: value
+    }, {
+      path: ['factions', 'Landowners', 'favorability'],
+      operation: 'ADD',
+      value: -10
+    }];
+  },
+  getWeight: function getWeight(game) {
+    var mult = 1;
+    if (game.capital < 100000) {
+      mult = 5;
+    }
+    return mult * (100 - game.factions['Intelligentsia'].favorability);
+  }
+}, {
+  name: 'Lower Prices',
+  description: 'Supply and Demand dictates lower prices required!',
+  support: ['Middle Class', 'Working Class'],
+  oppose: ['Corporations'],
+  changes: function changes(game) {
+    var priceChange = val(0.5, 0.5, 0.8);
+    return [{
+      path: ['factions', 'Corporations', 'props', 'price'],
+      operation: 'MULTIPLY',
+      value: priceChange
+    }, {
+      path: ['factions', 'Middle Class', 'props', 'demand'],
+      operation: 'MULTIPLY',
+      value: Math.round(1 / priceChange * 100) / 100
+    }];
+  },
+  getWeight: function getWeight(game) {
+    return 100 - game.factions['Middle Class'].favorability;
   }
 },
 
@@ -552,7 +688,7 @@ var policies = [
   name: 'Corporate Handout',
   description: 'Business is the bedrock of the economy so we need to give all the ' + 'support that we can afford.',
   support: ['Corporations'],
-  oppose: ['Middle Class', 'Working Class'],
+  oppose: ['Intelligentsia', 'Middle Class', 'Working Class'],
   changes: function changes(game) {
     var value = Math.min(val(250000, 100000, 500000), game.capital);
     return [{
@@ -562,7 +698,7 @@ var policies = [
     }, {
       path: ['capital'],
       operation: 'ADD',
-      value: -1 * handout
+      value: -1 * value
     }];
   },
   useOnce: false,
@@ -574,7 +710,7 @@ var policies = [
   isRadical: true,
   description: "We need radical solutions to save the Corporations",
   support: ['Corporations'],
-  oppose: ['Working Class', 'Middle Class'],
+  oppose: ['Intelligentsia', 'Working Class', 'Middle Class'],
   changes: function changes(game) {
     var handout = Math.min(val(500000, 250000, 1000000), game.capital);
     return [{
@@ -659,7 +795,7 @@ var policies = [
   name: 'Middle Class Relief Checks',
   description: 'The Middle Class is the bedrock of the economy so we need to give all the ' + 'support that we can afford.',
   support: ['Middle Class'],
-  oppose: ['Corporations', 'Working Class'],
+  oppose: ['Corporations', 'Landowners', 'Working Class'],
   changes: function changes(game) {
     var handout = Math.min(val(50000, 50000, 150000), game.capital);
     return [{
@@ -696,7 +832,7 @@ var policies = [
   isRadical: true,
   description: "We need radical solutions to get the Middle Class back on track",
   support: ['Middle Class'],
-  oppose: ['Corporations', 'Working Class'],
+  oppose: ['Corporations', 'Landowners', 'Military'],
   changes: function changes(game) {
     var handout = Math.min(val(50000, 50000, 250000), game.capital);
     return [{
@@ -744,7 +880,7 @@ var policies = [
     return [{
       path: ['factions', 'Working Class', 'taxRate'],
       operation: 'MULTIPLY',
-      value: vale(0.5, 0.3, 0.9)
+      value: val(0.5, 0.3, 0.9)
     }];
   },
   getWeight: function getWeight(game) {
@@ -754,7 +890,7 @@ var policies = [
   name: 'Raise Working Class Wages',
   description: "All workers deserve a living wage",
   support: ['Working Class'],
-  oppose: ['Corporations'],
+  oppose: ['Corporations', 'Landowners'],
   changes: function changes(game) {
     return [{
       path: ['factions', 'Working Class', 'props', 'wage'],
@@ -763,7 +899,7 @@ var policies = [
     }];
   },
   getWeight: function getWeight(game) {
-    return 100 - game.factions['Working Class'].favorability;
+    return 2 * (100 - game.factions['Working Class'].favorability);
   }
 }, {
   name: 'Lower Working Class Rent',
@@ -794,13 +930,13 @@ var policies = [
   },
   useOnce: false,
   getWeight: function getWeight(game) {
-    return 100 - game.factions['Working Class'].favorability;
+    return 2 * (100 - game.factions['Working Class'].favorability);
   }
 }, {
   name: 'Working Class Relief Checks',
   description: 'The Working Class is the bedrock of the economy so we need to give all the ' + 'support that we can afford.',
   support: ['Working Class'],
-  oppose: ['Corporations', 'Middle Class'],
+  oppose: ['Corporations', 'Landowners'],
   changes: function changes(game) {
     var handout = Math.min(val(100000, 50000, 150000), game.capital);
     return [{
@@ -822,7 +958,7 @@ var policies = [
   isRadical: true,
   description: "We need radical solutions to get the Working Class back on track",
   support: ['Working Class'],
-  oppose: ['Corporations'],
+  oppose: ['Corporations', 'Landowners', 'Military'],
   changes: function changes(game) {
     var handout = Math.min(val(100000, 50000, 150000), game.capital);
     return [{
@@ -858,7 +994,7 @@ var policies = [
   name: "Break the Strike!",
   isRadical: true,
   description: "We need radical solutions to get the Working Class back on track",
-  support: ['Corporations', 'Middle Class'],
+  support: ['Corporations', 'Landowners', 'Military'],
   oppose: ['Working Class'],
   changes: function changes(game) {
     return [{
@@ -927,7 +1063,102 @@ var policies = [
     }];
   },
   getWeight: function getWeight(game) {
-    return 100 - game.factions['Corporations'].favorability;
+    return 100 - game.factions['Landowners'].favorability;
+  }
+}, {
+  name: 'Subsidize Landowners',
+  description: 'Landowners are the bedrock of the economy so we need to give all the ' + 'support that we can afford.',
+  support: ['Landowners'],
+  oppose: ['Intelligentsia'],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Landowners', 'subsidy'],
+      operation: 'ADD',
+      value: val(15000, 10000, 25000)
+    }];
+  },
+  useOnce: false,
+  getWeight: function getWeight(game) {
+    return 100 - game.factions['Landowners'].favorability;
+  }
+},
+
+// Intelligentsia policies
+{
+  name: 'Subsidize Intelligentsia',
+  description: 'Intelligentsia are the bedrock of the economy so we need to give all the ' + 'support that we can afford.',
+  support: ['Intelligentsia'],
+  oppose: ['Landowners', 'Corporations'],
+  changes: function changes(game) {
+    return [{
+      path: ['factions', 'Intelligentsia', 'subsidy'],
+      operation: 'ADD',
+      value: val(15000, 10000, 25000)
+    }];
+  },
+  useOnce: false,
+  getWeight: function getWeight(game) {
+    return 100 - game.factions['Landowners'].favorability;
+  }
+}, {
+  name: 'Build University',
+  description: 'Intelligentsia work in universities and will add more value to society ' + 'if we have more of them',
+  support: ['Intelligentsia'],
+  oppose: ['Landowners', 'Corporations'],
+  changes: function changes(game) {
+    var handout = Math.min(val(50000, 50000, 250000), game.capital);
+    return [{
+      path: ['factions', 'Intelligentsia', 'props', 'universities'],
+      operation: 'ADD',
+      value: 1
+    }, {
+      path: ['factions', 'Intelligentsia', 'props', 'upkeepCosts'],
+      operation: 'ADD',
+      value: val(15000, 10000, 25000)
+    }, {
+      path: ['factions', 'Intelligentsia', 'wealth'],
+      operation: 'ADD',
+      value: handout
+    }, {
+      path: ['capital'],
+      operation: 'ADD',
+      value: -1 * handout
+    }];
+  },
+  useOnce: false,
+  getWeight: function getWeight(game) {
+    var numUs = game.factions.Intelligentsia.props.universities;
+    return Math.max(10, 3 * game.factions['Intelligentsia'].favorability - 10 * (numUs - 1));
+  }
+}, {
+  name: 'Fund a movie',
+  description: 'Intelligentsia produce great works of culture that make people happier',
+  support: ['Intelligentsia'],
+  oppose: ['Landowners', 'Corporations'],
+  changes: function changes(game) {
+    var handout = Math.min(val(50000, 50000, 150000), game.capital);
+    return [{
+      path: ['factions', 'Intelligentsia', 'props', 'movieStudios'],
+      operation: 'ADD',
+      value: 1
+    }, {
+      path: ['factions', 'Intelligentsia', 'props', 'upkeepCosts'],
+      operation: 'ADD',
+      value: val(15000, 5000, 15000)
+    }, {
+      path: ['factions', 'Intelligentsia', 'wealth'],
+      operation: 'ADD',
+      value: handout
+    }, {
+      path: ['capital'],
+      operation: 'ADD',
+      value: -1 * handout
+    }];
+  },
+  useOnce: false,
+  getWeight: function getWeight(game) {
+    var numMs = game.factions.Intelligentsia.props.movieStudios;
+    return Math.max(20, 3 * game.factions['Intelligentsia'].favorability - 10 * (numMs - 1));
   }
 }];
 
@@ -1109,7 +1340,7 @@ var gameReducer = function gameReducer(game, action) {
         game.time += 1;
         game.ticksToNextPolicy--;
         if (game.ticksToNextPolicy == -1) {
-          game.ticksToNextPolicy = randomIn(2, 4);
+          game.ticksToNextPolicy = randomIn(1, 4);
         }
 
         var months = game.time > 1 ? 'months' : 'month';
@@ -1153,6 +1384,22 @@ var gameReducer = function gameReducer(game, action) {
         var nerds = game.factions['Intelligentsia'];
         var army = game.factions['Military'];
         var lords = game.factions['Landowners'];
+
+        // Compute Intelligentsia bonuses
+        if ((game.time + 1) % 12 == 0) {
+          var skillInc = nerds.props.universities;
+          appendTicker(game, 'Intelligentsia perfect research into making workers more productive, ' + ('Middle Class skill increased by ' + skillInc));
+          mids.props.skill += skillInc;
+          mids.props.skillDelta["University Education"] = skillInc;
+        }
+        if ((game.time + 3) % 12 == 0) {
+          var favInc = nerds.props.movieStudios;
+          appendTicker(game, 'Intelligentsia produce a movie that the people love. ' + ('Middle and Working Class favorabilities increased by ' + favInc));
+          mids.favorability += favInc;
+          mids.favorabilityDelta["Liked movie production"] = favInc / 100;
+          poors.favorability += favInc;
+          poors.favorabilityDelta["Liked movie production"] = favInc / 100;
+        }
 
         // compute people hired by corporations
         var nextMidsUnemployment = mids.props.unemployment * (1 - corps.props.hiringRate);
@@ -1217,6 +1464,60 @@ var gameReducer = function gameReducer(game, action) {
           poors.props.unemploymentDelta['Unpaid workers'] = _unemploymentDelta;
         }
 
+        // compute rent by Middle Class
+        var midsRentCost = mids.population * lords.props.middleClassRent;
+
+        var _subtractWithDeficit4 = subtractWithDeficit(mids.wealth, midsRentCost, lords.props.middleClassRent),
+            midsRentDeficit = _subtractWithDeficit4.deficit,
+            midsRentSpent = _subtractWithDeficit4.amount;
+
+        var midsWhoCantRent = 0;
+        if (midsRentDeficit != 0) {
+          midsWhoCantRent = Math.round(midsRentDeficit / lords.props.middleClassRent);
+          appendTicker(game, 'The Middle Class is ' + displayMoney(midsRentDeficit) + ' short to afford rent. ' + (midsWhoCantRent + ' have been pushed to the Working Class'));
+          mids.population -= midsWhoCantRent;
+          mids.populationDelta['Evicted from Middle Class'] = -1 * midsWhoCantRent;
+        }
+        mids.wealth -= midsRentSpent;
+        mids.wealthDelta["Rent"] = -1 * midsRentSpent;
+
+        // compute rent by Working Class
+        var poorsRentCost = poors.population * lords.props.workingClassRent;
+
+        var _subtractWithDeficit5 = subtractWithDeficit(poors.wealth, poorsRentCost, lords.props.workingClassRent),
+            poorsRentDeficit = _subtractWithDeficit5.deficit,
+            poorsRentSpent = _subtractWithDeficit5.amount;
+
+        if (poorsRentDeficit != 0) {
+          var poorsWhoCantRent = 0;
+          poorsWhoCantRent = Math.round(poorsRentDeficit / lords.props.workingClassRent);
+          appendTicker(game, 'The Working Class is ' + displayMoney(poorsRentDeficit) + ' short to afford rent. ' + (poorsWhoCantRent + ' have been evicted'));
+          var unhousedDelta = poorsWhoCantRent / poors.population - poors.props.unhoused;
+          poors.props.unhoused = poorsWhoCantRent / poors.population;
+          if (unhousedDelta > 0) {
+            poors.props.unhousedDelta["Evicted"] = unhousedDelta;
+          } else if (unhousedDelta < 0) {
+            poors.props.unhousedDelta["Housed"] = unhousedDelta;
+          }
+        }
+        if (midsWhoCantAfford > 0) {
+          // this happens here so that poors population
+          // doesn't increase before they start renting
+          poors.population += midsWhoCantRent;
+          poors.populationDelta['Evicted from  Middle Class'] = midsWhoCantRent;
+        }
+        poors.wealth -= poorsRentSpent;
+        poors.wealthDelta["Rent"] = -1 * poorsRentSpent;
+
+        // compute income to Landowners (+ taxes)
+        var lordsProfit = midsRentSpent + poorsRentSpent;
+        var lordsTaxesCollected = lordsProfit * lords.taxRate;
+        game.capital += lordsTaxesCollected;
+        game.capitalDelta['Landowner taxes'] = lordsTaxesCollected;
+        lords.wealth += lordsProfit - lordsTaxesCollected;
+        lords.wealthDelta['Rental profits'] = lordsProfit;
+        lords.wealthDelta['Taxes paid'] = -1 * lordsTaxesCollected;
+
         // compute production of goods (and gdp?)
         var totalGoods = Math.round(midsActuallyPaid * mids.props.skill);
         corps.props.inventory += totalGoods;
@@ -1229,14 +1530,14 @@ var gameReducer = function gameReducer(game, action) {
         // compute purchase of goods by Middle Class
         var desiredMidSpend = mids.props.demand * mids.population * corps.props.price;
 
-        var _subtractWithDeficit4 = subtractWithDeficit(mids.wealth, desiredMidSpend, corps.props.price),
-            midsWealthDeficit = _subtractWithDeficit4.deficit,
-            midPurchasingPower = _subtractWithDeficit4.amount;
+        var _subtractWithDeficit6 = subtractWithDeficit(mids.wealth, desiredMidSpend, corps.props.price),
+            midsWealthDeficit = _subtractWithDeficit6.deficit,
+            midPurchasingPower = _subtractWithDeficit6.amount;
 
-        var _subtractWithDeficit5 = subtractWithDeficit(corps.props.inventory, midPurchasingPower / corps.props.price),
-            nextInventory = _subtractWithDeficit5.result,
-            inventoryDeficit = _subtractWithDeficit5.deficit,
-            inventoryBought = _subtractWithDeficit5.amount;
+        var _subtractWithDeficit7 = subtractWithDeficit(corps.props.inventory, midPurchasingPower / corps.props.price),
+            nextInventory = _subtractWithDeficit7.result,
+            inventoryDeficit = _subtractWithDeficit7.deficit,
+            inventoryBought = _subtractWithDeficit7.amount;
 
         if (inventoryDeficit != 0) {
           // not enough inventory
@@ -1263,14 +1564,14 @@ var gameReducer = function gameReducer(game, action) {
         // compute purchase of goods by Working Class
         var desiredPoorSpend = poors.props.demand * poors.population * corps.props.price;
 
-        var _subtractWithDeficit6 = subtractWithDeficit(poors.wealth, desiredPoorSpend, corps.props.price),
-            poorsWealthDeficit = _subtractWithDeficit6.deficit,
-            poorPurchasingPower = _subtractWithDeficit6.amount;
+        var _subtractWithDeficit8 = subtractWithDeficit(poors.wealth, desiredPoorSpend, corps.props.price),
+            poorsWealthDeficit = _subtractWithDeficit8.deficit,
+            poorPurchasingPower = _subtractWithDeficit8.amount;
 
-        var _subtractWithDeficit7 = subtractWithDeficit(corps.props.inventory, poorPurchasingPower / corps.props.price),
-            nextInventory2 = _subtractWithDeficit7.result,
-            inventoryDeficit2 = _subtractWithDeficit7.deficit,
-            inventoryBought2 = _subtractWithDeficit7.amount;
+        var _subtractWithDeficit9 = subtractWithDeficit(corps.props.inventory, poorPurchasingPower / corps.props.price),
+            nextInventory2 = _subtractWithDeficit9.result,
+            inventoryDeficit2 = _subtractWithDeficit9.deficit,
+            inventoryBought2 = _subtractWithDeficit9.amount;
 
         if (inventoryDeficit2 != 0) {
           // not enough inventory
@@ -1311,60 +1612,6 @@ var gameReducer = function gameReducer(game, action) {
         corps.wealthDelta['Business profits'] = corpProfit;
         corps.wealthDelta['Taxes paid'] = -1 * corpTaxesCollected;
 
-        // compute rent by Middle Class
-        var midsRentCost = mids.population * lords.props.middleClassRent;
-
-        var _subtractWithDeficit8 = subtractWithDeficit(mids.wealth, midsRentCost, lords.props.middleClassRent),
-            midsRentDeficit = _subtractWithDeficit8.deficit,
-            midsRentSpent = _subtractWithDeficit8.amount;
-
-        var midsWhoCantRent = 0;
-        if (midsRentDeficit != 0) {
-          midsWhoCantRent = Math.round(midsRentDeficit / lords.props.middleClassRent);
-          appendTicker(game, 'The Middle Class is ' + displayMoney(midsRentDeficit) + ' short to afford rent. ' + (midsWhoCantRent + ' have been pushed to the Working Class'));
-          mids.population -= midsWhoCantRent;
-          mids.populationDelta['Evicted from Middle Class'] = -1 * midsWhoCantRent;
-        }
-        mids.wealth -= midsRentSpent;
-        mids.wealthDelta["Rent"] = -1 * midsRentSpent;
-
-        // compute rent by Working Class
-        var poorsRentCost = poors.population * lords.props.workingClassRent;
-
-        var _subtractWithDeficit9 = subtractWithDeficit(poors.wealth, poorsRentCost, lords.props.workingClassRent),
-            poorsRentDeficit = _subtractWithDeficit9.deficit,
-            poorsRentSpent = _subtractWithDeficit9.amount;
-
-        if (poorsRentDeficit != 0) {
-          var poorsWhoCantRent = 0;
-          poorsWhoCantRent = Math.round(poorsRentDeficit / lords.props.workingClassRent);
-          appendTicker(game, 'The Working Class is ' + displayMoney(poorsRentDeficit) + ' short to afford rent. ' + (poorsWhoCantRent + ' have been evicted'));
-          var unhousedDelta = poorsWhoCantRent / poors.population - poors.props.unhoused;
-          poors.props.unhoused = poorsWhoCantRent / poors.population;
-          if (unhousedDelta > 0) {
-            poors.props.unhousedDelta["Evicted"] = unhousedDelta;
-          } else if (unhousedDelta < 0) {
-            poors.props.unhousedDelta["Housed"] = unhousedDelta;
-          }
-        }
-        if (midsWhoCantAfford > 0) {
-          // this happens here so that poors population
-          // doesn't increase before they start renting
-          poors.population += midsWhoCantRent;
-          poors.populationDelta['Evicted from  Middle Class'] = midsWhoCantRent;
-        }
-        poors.wealth -= poorsRentSpent;
-        poors.wealthDelta["Rent"] = -1 * poorsRentSpent;
-
-        // compute income to Landowners
-        var lordsProfit = midsRentSpent + poorsRentSpent;
-        var lordsTaxesCollected = lordsProfit * lords.taxRate;
-        game.capital += lordsTaxesCollected;
-        game.capitalDelta['Landowner taxes'] = lordsTaxesCollected;
-        lords.wealth += lordsProfit - lordsTaxesCollected;
-        lords.wealthDelta['Rental profits'] = lordsProfit;
-        lords.wealthDelta['Taxes paid'] = -1 * lordsTaxesCollected;
-
         // upkeep costs
         for (var _factionName3 in game.factions) {
           var _faction2 = game.factions[_factionName3];
@@ -1396,7 +1643,7 @@ var gameReducer = function gameReducer(game, action) {
           }
 
           if (_faction3.props.unemployment > 0.1) {
-            var _favorabilityDelta3 = Math.floor(_faction3.props.unemployment * 5);
+            var _favorabilityDelta3 = Math.floor(_faction3.props.unemployment * 5) + 1;
             // const favorabilityDelta = 1;
             _faction3.favorability -= _favorabilityDelta3;
             _faction3.favorabilityDelta['High unemployment'] = -1 * _favorabilityDelta3 / 100;
@@ -1413,9 +1660,6 @@ var gameReducer = function gameReducer(game, action) {
         // compute favorability (unemployment, wealth, taxRate)
 
         // compute social mobility
-
-        // intelligentsia
-        // compute production and skill gains
 
         // army
 
@@ -1571,7 +1815,7 @@ var initGameState = function initGameState() {
     gdpDelta: {},
 
     ticker: ['Welcome to The Command Economy'],
-    ticksToNextPolicy: 5,
+    ticksToNextPolicy: 3,
     time: 0,
 
     policy: null,
@@ -1682,8 +1926,17 @@ var initGameOverSystem = function initGameOverSystem(store) {
     }
 
     // loss conditions
-    if (game.gameOver) {
-      handleGameLoss(store, dispatch, state, 'loss');
+    var numZeroFav = 0;
+    var dislikes = [];
+    for (var factionName in game.factions) {
+      var faction = game.factions[factionName];
+      if (faction.favorability == 0) {
+        numZeroFav++;
+        dislikes.push(factionName);
+      }
+    }
+    if (game.gameOver || numZeroFav > 1) {
+      handleGameLoss(store, dispatch, state, dislikes);
     }
   });
 };
@@ -1692,7 +1945,7 @@ var checkWin = function checkWin(game) {
   return false;
 };
 
-var handleGameLoss = function handleGameLoss(store, dispatch, state, reason) {
+var handleGameLoss = function handleGameLoss(store, dispatch, state, dislikes) {
   var game = state.game;
 
   dispatch({ type: 'STOP_TICK' });
@@ -1717,7 +1970,7 @@ var handleGameLoss = function handleGameLoss(store, dispatch, state, reason) {
   var body = React.createElement(
     'div',
     null,
-    'Unrest is too high and the people have overthrown you! You kept the economy going\n      for ' + game.time + ' days'
+    'You are too unpopular and the ' + dislikes[0] + ' and the ' + dislikes[1] + ' teamed up to\n    overthrow you. You survived in power for ' + game.time + ' months'
   );
 
   dispatch({ type: 'SET_MODAL',

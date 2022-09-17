@@ -1,12 +1,16 @@
 
 - - - - - PLAYTEST - - - - - -
   - have description as first line of hovercards?
+  - also hovercard description of each faction on their name
   - policies should be more likely based on wealth/wealthDelta of factions
-  - many more policies
-    - raise army/intelligentsia/landowner subsidies
-    - build university / fund movie
-    - reclaim money from landowners
-    - draft working class into army / send home
+  - landowners still suck up all the wealth
+  - skill of middle class just doesn't seem to matter
+  - awkward when one policy is clearly necessary to survive but won't get recommended
+  - upkeepCosts just erase money
+  - what's stopping strategy of just always choosing policy to help poorest faction?
+  - worker's wage must be more than (price * demand + rent)
+    - how else can corporations make money to afford this pay?
+  - policy to print money (but increase prices/rents)
 
 
 - - - - - - BUGS - - - - - -
@@ -19,6 +23,10 @@
     - 2 factions at 0% favorability
     - display # turns
     - function to get gov type based on policies (and favorability?)
+  - history
+    - total favorability across all turns
+    - times sided with vs sided against
+    - weighted by number of policies in config that they support?
   - favorability changes
     - consequences of unfavorability per faction
       - middle/working class -> strikes

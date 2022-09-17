@@ -18,13 +18,25 @@ const val = (base, min, max, isNormal) => {
   return randomIn(min * mult, max * mult) / mult;
 };
 
+const factionHealth = (game) => {
+  let scores = {};
+  for (const factionName in game.factions) {
+    const faction = game.factions[factionName];
+    const wealthScore = 10000000 * 1 / (faction.wealth + 1)
+    scores[factionName] = (100 - faction.favorability) + wealthScore;
+  }
+  return scores;
+}
+
+window.dire = factionHealth;
+
 
 const config = {
   isRandomized: IS_RANDOMIZED,
   msPerTick: 1000,
   maxTickerLength: 7,
 
-  capital: 2500000,
+  capital: 5000000,
 
   subsidyDeficitMult: 5,
   wagesDeficitMult: 5,
@@ -33,15 +45,15 @@ const config = {
 
     ['Corporations']: {
       name: 'Corporations',
-      wealth: 1500000,
+      wealth: 3500000,
       taxRate: val(0.2, 0, 0.4),
       subsidy: val(0, 10000, 50000),
       population: val(50, 1, 100, true),
       favorability: 50,
       props: {
         hiringRate: 0.1,
-        inventory: 50000,
-        price: val(5, 2, 7),
+        inventory: 1000000,
+        price: val(5, 3, 6),
       },
     },
 
@@ -61,7 +73,7 @@ const config = {
       name: 'Landowners',
       wealth: 1000000,
       taxRate: val(0.2, 0.2, 0.6),
-      subsidy: val(0, 10000, 50000),
+     subsidy: val(0, 1000, 5000),
       population: val(50, 1, 100, true),
       favorability: 50,
       props: {
@@ -79,7 +91,7 @@ const config = {
       favorability: 50,
       props: {
         unemployment: val(0.1, 0, 0.3), // rate of not employed
-        wage: val(3, 2, 6), // wage going to each employed person
+        wage: val(3, 4, 7), // wage going to each employed person
         demand: 1, // how much inventory each person wants
         unhoused: 0, // can't afford housing
       },
@@ -90,13 +102,13 @@ const config = {
       wealth: 750000,
       taxRate: val(0.4, 0, 0.4),
       subsidy: val(0, 5000, 15000),
-      population: val(1000, 100, 10000),
+      population: val(1000, 2000, 10000),
       favorability: 50,
       props: {
         unemployment: val(0.1, 0, 0.3), // rate of not employed
-        wage: val(10, 2, 30, true), // wage going to each employed person
-        demand: val(2, 2, 5), // how much inventory each person wants
-        skill: val(5, 3, 8), // how much more productive than working class employed person is
+        wage: val(10, 25, 35, true), // wage going to each employed person
+        demand: val(2, 4, 5), // how much inventory each person wants
+        skill: 3, // val(5, 3, 4), // how much more productive than working class
       },
     },
 
@@ -312,6 +324,64 @@ const policies = [
       return mult * (100 - game.factions['Intelligentsia'].favorability);
     },
   },
+  {
+    name: 'Reclaim Landowners money',
+    description: "To balance the budget, we'll have to ask for a fairer share from " +
+      "the richest among us",
+    support: ['Working Class', 'Middle Class', 'Intelligentsia'],
+    oppose: ['Landowners'],
+    changes: (game) => {
+      const value = Math.min(val(250000, 50000, 500000), game.factions.Landowners.wealth);
+      return [
+        {
+          path: ['factions', 'Landowners', 'wealth'],
+          operation: 'ADD',
+          value: -1 * value,
+        },
+        {
+          path: ['capital'],
+          operation: 'ADD',
+          value,
+        },
+        {
+          path: ['factions', 'Landowners', 'favorability'],
+          operation: 'ADD',
+          value: -10,
+        },
+      ];
+    },
+    getWeight: (game) => {
+      let mult = 1;
+      if (game.capital < 100000) {
+        mult = 5;
+      }
+      return mult * (100 - game.factions['Intelligentsia'].favorability);
+    },
+  },
+  {
+    name: 'Lower Prices',
+    description: 'Supply and Demand dictates lower prices required!',
+    support: ['Middle Class', 'Working Class'],
+    oppose: ['Corporations'],
+    changes: (game) => {
+      const priceChange = val(0.5, 0.5, 0.8);
+      return [
+        {
+          path: ['factions', 'Corporations', 'props', 'price'],
+          operation: 'MULTIPLY',
+          value: priceChange,
+        },
+        {
+          path: ['factions', 'Middle Class', 'props', 'demand'],
+          operation: 'MULTIPLY',
+          value: Math.round(1 / priceChange * 100) / 100,
+        },
+      ];
+    },
+    getWeight: (game) => {
+      return 100 - game.factions['Middle Class'].favorability;
+    },
+  },
 
   // Corporate Policies
   {
@@ -429,7 +499,7 @@ const policies = [
         {
           path: ['capital'],
           operation: 'ADD',
-          value: -1 * handout,
+          value: -1 * value,
         },
       ];
     },
@@ -639,7 +709,7 @@ const policies = [
       return [{
         path: ['factions', 'Working Class', 'taxRate'],
         operation: 'MULTIPLY',
-        value: vale(0.5, 0.3, 0.9),
+        value: val(0.5, 0.3, 0.9),
       }];
     },
     getWeight: (game) => {
@@ -659,7 +729,7 @@ const policies = [
       }];
     },
     getWeight: (game) => {
-      return 100 - game.factions['Working Class'].favorability;
+      return 2 * (100 - game.factions['Working Class'].favorability);
     },
   },
   {
@@ -693,7 +763,7 @@ const policies = [
     },
     useOnce: false,
     getWeight: (game) => {
-      return 100 - game.factions['Working Class'].favorability;
+      return 2 * (100 - game.factions['Working Class'].favorability);
     },
   },
   {
@@ -845,11 +915,120 @@ const policies = [
       }];
     },
     getWeight: (game) => {
-      return 100 - game.factions['Corporations'].favorability;
+      return 100 - game.factions['Landowners'].favorability;
+    },
+  },
+  {
+    name: 'Subsidize Landowners',
+    description: 'Landowners are the bedrock of the economy so we need to give all the ' +
+      'support that we can afford.',
+    support: ['Landowners'],
+    oppose: ['Intelligentsia'],
+    changes: (game) => {
+      return [{
+        path: ['factions', 'Landowners', 'subsidy'],
+        operation: 'ADD',
+        value: val(15000, 10000, 25000),
+      }];
+    },
+    useOnce: false,
+    getWeight: (game) => {
+      return 100 - game.factions['Landowners'].favorability;
     },
   },
 
   // Intelligentsia policies
+  {
+    name: 'Subsidize Intelligentsia',
+    description: 'Intelligentsia are the bedrock of the economy so we need to give all the ' +
+      'support that we can afford.',
+    support: ['Intelligentsia'],
+    oppose: ['Landowners', 'Corporations'],
+    changes: (game) => {
+      return [{
+        path: ['factions', 'Intelligentsia', 'subsidy'],
+        operation: 'ADD',
+        value: val(15000, 10000, 25000),
+      }];
+    },
+    useOnce: false,
+    getWeight: (game) => {
+      return 100 - game.factions['Landowners'].favorability;
+    },
+  },
+  {
+    name: 'Build University',
+    description: 'Intelligentsia work in universities and will add more value to society ' +
+      'if we have more of them',
+    support: ['Intelligentsia'],
+    oppose: ['Landowners', 'Corporations'],
+    changes: (game) => {
+      const handout = Math.min(val(50000, 50000, 250000), game.capital);
+      return [
+        {
+          path: ['factions', 'Intelligentsia', 'props', 'universities'],
+          operation: 'ADD',
+          value: 1,
+        },
+        {
+          path: ['factions', 'Intelligentsia', 'props', 'upkeepCosts'],
+          operation: 'ADD',
+          value: val(15000, 10000, 25000),
+        },
+        {
+          path: ['factions', 'Intelligentsia', 'wealth'],
+          operation: 'ADD',
+          value: handout,
+        },
+        {
+          path: ['capital'],
+          operation: 'ADD',
+          value: -1 * handout,
+        },
+      ];
+    },
+    useOnce: false,
+    getWeight: (game) => {
+      const numUs = game.factions.Intelligentsia.props.universities;
+      return Math.max(10, 3 * game.factions['Intelligentsia'].favorability - 10 * (numUs - 1));
+    },
+  },
+  {
+    name: 'Fund a movie',
+    description: 'Intelligentsia produce great works of culture that make people happier',
+    support: ['Intelligentsia'],
+    oppose: ['Landowners', 'Corporations'],
+    changes: (game) => {
+      const handout = Math.min(val(50000, 50000, 150000), game.capital);
+      return [
+        {
+          path: ['factions', 'Intelligentsia', 'props', 'movieStudios'],
+          operation: 'ADD',
+          value: 1,
+        },
+        {
+          path: ['factions', 'Intelligentsia', 'props', 'upkeepCosts'],
+          operation: 'ADD',
+          value: val(15000, 5000, 15000),
+        },
+        {
+          path: ['factions', 'Intelligentsia', 'wealth'],
+          operation: 'ADD',
+          value: handout,
+        },
+        {
+          path: ['capital'],
+          operation: 'ADD',
+          value: -1 * handout,
+        },
+      ];
+    },
+    useOnce: false,
+    getWeight: (game) => {
+      const numMs = game.factions.Intelligentsia.props.movieStudios;
+      return Math.max(20, 3 * game.factions['Intelligentsia'].favorability - 10 * (numMs - 1));
+    },
+  },
 
   // Army policies
 ];

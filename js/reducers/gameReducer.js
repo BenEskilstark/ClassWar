@@ -95,7 +95,7 @@ const gameReducer = (game, action) => {
       game.time += 1;
       game.ticksToNextPolicy--;
       if (game.ticksToNextPolicy == -1) {
-        game.ticksToNextPolicy = randomIn(2, 4);
+        game.ticksToNextPolicy = randomIn(1, 4);
       }
 
       let months = game.time > 1 ? 'months' : 'month';
@@ -151,19 +151,19 @@ const gameReducer = (game, action) => {
 
 
       // Compute Intelligentsia bonuses
-      if (game.tick % 7 == 0) {
+      if ((game.time + 1) % 12 == 0) {
         const skillInc = nerds.props.universities;
         appendTicker(game,
           `Intelligentsia perfect research into making workers more productive, ` +
-          `Middle Class skill increased by ${skillIncrease}`,
+          `Middle Class skill increased by ${skillInc}`,
         );
         mids.props.skill += skillInc;
         mids.props.skillDelta["University Education"] = skillInc;
       }
-      if ((game.tick + 3) % 7 == 0) {
+      if ((game.time + 3) % 12 == 0) {
         const favInc = nerds.props.movieStudios;
         appendTicker(game,
-          `Intelligentsia produce a movie that the people love.` +
+          `Intelligentsia produce a movie that the people love. ` +
           `Middle and Working Class favorabilities increased by ${favInc}`,
         );
         mids.favorability += favInc;
@@ -470,7 +470,7 @@ const gameReducer = (game, action) => {
         }
 
         if (faction.props.unemployment > 0.1) {
-          const favorabilityDelta = Math.floor(faction.props.unemployment * 5);
+          const favorabilityDelta = Math.floor(faction.props.unemployment * 5) + 1;
           // const favorabilityDelta = 1;
           faction.favorability -= favorabilityDelta;
           faction.favorabilityDelta['High unemployment'] = -1 * favorabilityDelta / 100;

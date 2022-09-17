@@ -31,8 +31,17 @@ const initGameOverSystem = (store) => {
     }
 
     // loss conditions
-    if (game.gameOver) {
-      handleGameLoss(store, dispatch, state, 'loss');
+    let numZeroFav = 0;
+    const dislikes = [];
+    for (const factionName in game.factions) {
+      const faction = game.factions[factionName];
+      if (faction.favorability == 0) {
+        numZeroFav++;
+        dislikes.push(factionName);
+      }
+    }
+    if (game.gameOver || numZeroFav > 1) {
+      handleGameLoss(store, dispatch, state, dislikes);
     }
 
   });
@@ -42,7 +51,7 @@ const checkWin = (game) => {
   return false;
 }
 
-const handleGameLoss = (store, dispatch, state, reason): void => {
+const handleGameLoss = (store, dispatch, state, dislikes): void => {
   const {game} = state;
   dispatch({type: 'STOP_TICK'});
 
@@ -65,8 +74,8 @@ const handleGameLoss = (store, dispatch, state, reason): void => {
 
   const body = (
     <div>
-    {`Unrest is too high and the people have overthrown you! You kept the economy going
-      for ${game.time} days`}
+    {`You are too unpopular and the ${dislikes[0]} and the ${dislikes[1]} teamed up to
+    overthrow you. You survived in power for ${game.time} months`}
     </div>
   );
 
