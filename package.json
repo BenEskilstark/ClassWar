@@ -7,7 +7,7 @@
     "flow": "flow",
     "babel": "babel",
     "browserify": "browserify",
-    "start": "node server/server.js",
+    "start": "python3 -m http.server",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
