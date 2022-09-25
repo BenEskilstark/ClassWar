@@ -1,5 +1,3 @@
- - get ui package working again so it makes
-
 - - - - - PLAYTEST - - - - - -
   - with policy popping in your face every tick hard focus on what's changing
     - show way less information (to fit on mobile?)
@@ -28,7 +26,6 @@
 
 
 - - - - - - UI - - - - - -
-  - display Modal below ticker so you can always see it
   - have description as first line of hovercards?
   - also hovercard description of each faction on their name
   - rename Factions to Class?
