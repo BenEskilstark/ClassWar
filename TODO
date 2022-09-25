@@ -1,20 +1,26 @@
+ - get ui package working again so it makes
 
 - - - - - PLAYTEST - - - - - -
+  - with policy popping in your face every tick hard focus on what's changing
+    - show way less information (to fit on mobile?)
+
+
+- - - - - BALANCE - - - - - -
+  - policy to print money (but increase prices/rents)
+  - upkeepCosts just erase money --> who are they paying?
+  - policies should be more likely based on wealth/wealthDelta of factions
+    - policies that reduce benefits should be inverse weighted
   - just can't raise prices without raising wages for working class
   - too many policies that punish working/middle when corps are doing poorly don't
     actually help the corporations
-  - policies should be more likely based on wealth/wealthDelta of factions
-    - policies that reduce benefits should be inverse weighted
   - landowners still suck up all the wealth
-  - skill of middle class (universities!) just doesn't seem to matter
-  - awkward when one policy is clearly necessary to survive but won't get recommended
-  - upkeepCosts just erase money --> who are they paying?
-  - what's stopping strategy of just always choosing policy to help poorest faction?
-    - policies need more/nuanced changes
+  - can keep favorability artificially high just by rejecting policies they oppose
   - worker's wage must be more than (price * demand + rent)
     - how else can corporations make money to afford this pay?
-  - policy to print money (but increase prices/rents)
-  - can keep favorability artificially high just by rejecting policies they oppose
+  - awkward when one policy is clearly necessary to survive but won't get recommended
+  - skill of middle class (universities!) just doesn't seem to matter
+  - what's stopping strategy of just always choosing policy to help poorest faction?
+    - policies need more/nuanced changes
 
 
 - - - - - - BUGS - - - - - -

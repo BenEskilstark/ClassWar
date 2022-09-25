@@ -55,6 +55,7 @@ function PolicyModal(props): React.Node {
   return (
     <Modal
       title={"Proposal: " + policy.name}
+      style={{top: 150}}
       body={
         <div>
           {policy.description}
