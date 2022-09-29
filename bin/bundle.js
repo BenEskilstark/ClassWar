@@ -250,7 +250,7 @@ function PolicyModal(props) {
 }
 
 module.exports = PolicyModal;
-},{"../config":2,"../utils/display":14,"bens_ui_components":33,"react":46}],2:[function(require,module,exports){
+},{"../config":2,"../utils/display":14,"bens_ui_components":33,"react":47}],2:[function(require,module,exports){
 'use strict';
 
 var _factions;
@@ -303,6 +303,7 @@ var config = {
 
   factions: (_factions = {}, _defineProperty(_factions, 'Corporations', {
     name: 'Corporations',
+    description: 'Businesses that employ the Working ' + 'and Middle Classes to produce goods people need',
     wealth: 3500000,
     taxRate: val(0.2, 0, 0.4),
     subsidy: val(0, 10000, 50000),
@@ -314,19 +315,9 @@ var config = {
       inventory: 1000000,
       price: val(5, 3, 6)
     }
-  }), _defineProperty(_factions, 'Military', {
-    name: 'Military',
-    wealth: 500000,
-    taxRate: 0,
-    subsidy: val(0, 25000, 75000),
-    population: val(500, 1000, 5000, true),
-    favorability: 50,
-    favTotal: 0,
-    props: {
-      upkeepCosts: val(25000, 25000, 50000) // cost per turn from their wealth
-    }
   }), _defineProperty(_factions, 'Landowners', {
     name: 'Landowners',
+    description: 'The landed aristocracy owns the land where people live and farm',
     wealth: 1000000,
     taxRate: val(0.2, 0.2, 0.6),
     subsidy: val(0, 1000, 5000),
@@ -335,14 +326,31 @@ var config = {
     favTotal: 0,
     props: {
       workingClassRent: val(2, 1, 3), // rent charged to working class per turn
-      middleClassRent: val(10, 5, 10) // charged to middle class per turn
+      middleClassRent: val(10, 5, 10), // charged to middle class per turn
+      hiringRate: 0.1,
+      foodInventory: 100000 // how much food is available
+    }
+  }), _defineProperty(_factions, 'Intelligentsia', {
+    name: 'Intelligentsia',
+    description: 'The intellectual and cultural elite of society. From time to' + ' time they produce movies that people like and skill gains that increase' + ' productivity',
+    wealth: 1000000,
+    taxRate: 0,
+    subsidy: val(0, 25000, 75000),
+    population: val(1000, 100, 10000),
+    favorability: 50,
+    favTotal: 0,
+    props: {
+      upkeepCosts: val(25000, 25000, 50000), // cost per turn from their wealth
+      universities: 1, // makes skill increases more likely
+      movieStudios: 1 // makes favorability increases more likely
     }
   }), _defineProperty(_factions, 'Working Class', {
     name: 'Working Class',
+    description: 'Factory workers are employed by the corporations and work to ' + 'produce the goods people need',
     wealth: 500000,
     taxRate: val(0.3, 0, 0.4),
     subsidy: val(0, 0, 10000),
-    population: val(10000, 1000, 50000),
+    population: val(10000, 10000, 50000),
     favorability: 50,
     favTotal: 0,
     props: {
@@ -351,8 +359,24 @@ var config = {
       demand: 1, // how much inventory each person wants
       unhoused: 0 // can't afford housing
     }
+  }), _defineProperty(_factions, 'Farmers', {
+    name: 'Farmers',
+    description: 'Farmers work the land owned by landowners to produce food ' + 'which everyone needs to eat',
+    wealth: 500000,
+    taxRate: 0.01,
+    subsidy: val(0, 25000, 75000),
+    population: val(10000, 20000, 50000),
+    favorability: 50,
+    favTotal: 0,
+    props: {
+      wage: val(3, 3, 6), // wage going to each employed person
+      unemployment: val(0.1, 0, 0.2), // rate of not employed
+      skill: 2, // how much food each employed farmed produces
+      unhoused: 0 // can't afford housing
+    }
   }), _defineProperty(_factions, 'Middle Class', {
     name: 'Middle Class',
+    description: 'Middle class workers also work for the corporations and contribute' + ' to the production of goods proportional to their skill',
     wealth: 750000,
     taxRate: val(0.4, 0, 0.4),
     subsidy: val(0, 5000, 15000),
@@ -364,19 +388,6 @@ var config = {
       wage: val(10, 25, 35, true), // wage going to each employed person
       demand: val(2, 4, 5), // how much inventory each person wants
       skill: 3 // val(5, 3, 4), // how much more productive than working class
-    }
-  }), _defineProperty(_factions, 'Intelligentsia', {
-    name: 'Intelligentsia',
-    wealth: 1000000,
-    taxRate: 0,
-    subsidy: val(0, 25000, 75000),
-    population: val(1000, 100, 10000),
-    favorability: 50,
-    favTotal: 0,
-    props: {
-      upkeepCosts: val(25000, 25000, 50000), // cost per turn from their wealth
-      universities: 1, // makes skill increases more likely
-      movieStudios: 1 // makes favorability increases more likely
     }
   }), _factions)
 };
@@ -405,7 +416,7 @@ var policies = [
 }, {
   name: 'Reduce Middle Class Subsidies',
   description: 'We must reel in the nanny state and keep the money for more important ' + 'societal projects.',
-  support: ['Landowners', 'Corporations', 'Military'],
+  support: ['Landowners', 'Corporations'],
   oppose: ['Middle Class'],
   changes: function changes(game) {
     return [{
@@ -424,7 +435,7 @@ var policies = [
 }, {
   name: 'Reduce Working Class Subsidies',
   description: 'We must reel in the nanny state and keep the money for more important ' + 'societal projects.',
-  support: ['Landowners', 'Corporations', 'Military'],
+  support: ['Landowners', 'Corporations'],
   oppose: ['Working Class'],
   changes: function changes(game) {
     return [{
@@ -443,7 +454,7 @@ var policies = [
 }, {
   name: 'Reduce Subsidy to Intelligentsia',
   description: 'These elitists are wasting money.',
-  support: ['Landowners', 'Corporations', 'Military', 'Working Class'],
+  support: ['Landowners', 'Corporations', 'Working Class'],
   oppose: ['Intelligentsia'],
   changes: function changes(game) {
     return [{
@@ -460,13 +471,13 @@ var policies = [
     return mult * (100 - game.factions['Corporations'].favorability);
   }
 }, {
-  name: 'Reduce Subsidy to Military',
-  description: 'Stop the warmongering and focus on what matters!',
-  support: ['Intelligentsia'],
-  oppose: ['Military'],
+  name: 'Reduce Subsidy to Farmers',
+  description: 'Farmers are taking too much from the government',
+  support: ['Landowners'],
+  oppose: ['Farmers'],
   changes: function changes(game) {
     return [{
-      path: ['factions', 'Military', 'subsidy'],
+      path: ['factions', 'Farmers', 'subsidy'],
       operation: 'MULTIPLY',
       value: val(0.5, 0.4, 0.8)
     }];
@@ -476,7 +487,7 @@ var policies = [
     if (game.capital < 100000) {
       mult = 4;
     }
-    return mult * (100 - game.factions['Intelligentsia'].favorability);
+    return mult * (100 - game.factions['Landowners'].favorability);
   }
 }, {
   name: 'Raise Middle Class Tax Rate',
@@ -839,7 +850,7 @@ var policies = [
   isRadical: true,
   description: "We need radical solutions to get the Middle Class back on track",
   support: ['Middle Class'],
-  oppose: ['Corporations', 'Landowners', 'Military'],
+  oppose: ['Corporations', 'Landowners'],
   changes: function changes(game) {
     var handout = Math.min(val(50000, 50000, 250000), game.capital);
     return [{
@@ -965,7 +976,7 @@ var policies = [
   isRadical: true,
   description: "We need radical solutions to get the Working Class back on track",
   support: ['Working Class'],
-  oppose: ['Corporations', 'Landowners', 'Military'],
+  oppose: ['Corporations', 'Landowners'],
   changes: function changes(game) {
     var handout = Math.min(val(100000, 50000, 150000), game.capital);
     return [{
@@ -1001,7 +1012,7 @@ var policies = [
   name: "Break the Strike!",
   isRadical: true,
   description: "We need radical solutions to get the Working Class back on track",
-  support: ['Corporations', 'Landowners', 'Military'],
+  support: ['Corporations', 'Landowners'],
   oppose: ['Working Class'],
   changes: function changes(game) {
     return [{
@@ -1181,7 +1192,7 @@ var _require = require('redux'),
 
 var Main = require('./ui/Main.react');
 var React = require('react');
-var ReactDOM = require('react-dom');
+var ReactDOM = require('react-dom/client');
 
 var _require2 = require('./reducers/rootReducer'),
     rootReducer = _require2.rootReducer;
@@ -1204,7 +1215,7 @@ renderUI(store);
 store.subscribe(function () {
   renderUI(store);
 });
-},{"./reducers/rootReducer":6,"./ui/Main.react":12,"react":46,"react-dom":43,"redux":47}],4:[function(require,module,exports){
+},{"./reducers/rootReducer":6,"./ui/Main.react":12,"react":47,"react-dom/client":43,"redux":48}],4:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -1391,7 +1402,7 @@ var gameReducer = function gameReducer(game, action) {
         var mids = game.factions['Middle Class'];
         var poors = game.factions['Working Class'];
         var nerds = game.factions['Intelligentsia'];
-        var army = game.factions['Military'];
+        var farmers = game.factions['Farmers'];
         var lords = game.factions['Landowners'];
 
         // Compute Intelligentsia bonuses
@@ -1418,6 +1429,11 @@ var gameReducer = function gameReducer(game, action) {
         var nextPoorsUnemployment = poors.props.unemployment * (1 - corps.props.hiringRate);
         poors.props.unemploymentDelta['Hired by Corporations'] = nextPoorsUnemployment - poors.props.unemployment;
         poors.props.unemployment = nextPoorsUnemployment;
+
+        // compute people hired by landowners
+        var nextFarmersUnemployment = farmers.props.unemployment * (1 - lords.props.hiringRate);
+        farmers.props.unemploymentDelta['Hired by Landowners'] = nextFarmersUnemployment - farmers.props.unemployment;
+        farmers.props.unemployment = nextFarmersUnemployment;
 
         // compute payment to middle class (with tax)
         var employedMids = mids.population * (1 - mids.props.unemployment);
@@ -1473,12 +1489,38 @@ var gameReducer = function gameReducer(game, action) {
           poors.props.unemploymentDelta['Unpaid workers'] = _unemploymentDelta;
         }
 
+        // compute payment to farmers (with tax)
+        var employedFarmers = farmers.population * (1 - farmers.props.unemployment);
+        var farmerPay = employedFarmers * farmers.props.wage;
+
+        var _subtractWithDeficit4 = subtractWithDeficit(lords.wealth, farmerPay, farmers.props.wage),
+            nextLordWealth = _subtractWithDeficit4.result,
+            lordWealthDeficit = _subtractWithDeficit4.deficit,
+            farmersWagesPaid = _subtractWithDeficit4.amount;
+
+        var farmersActuallyPaid = lordWealthDeficit == 0 ? employedFarmers : farmersWagesPaid / farmers.props.wage;
+        var farmersTaxesCollected = farmersWagesPaid * farmers.taxRate;
+        game.capital += farmersTaxesCollected;
+        game.capitalDelta['Farmers\' taxes'] = farmersTaxesCollected;
+        farmers.wealth += farmersWagesPaid - farmersTaxesCollected;
+        farmers.wealthDelta['Wages paid'] = farmersWagesPaid;
+        farmers.wealthDelta['Taxes paid'] = -1 * farmersTaxesCollected;
+        lords.wealth = nextLordWealth;
+        lords.wealthDelta['Farmers\' wages paid'] = -1 * farmersWagesPaid;
+        // compute unfavorability/unemployement if lord can't pay
+        if (lordWealthDeficit != 0) {
+          appendTicker(game, 'Landowners are ' + displayMoney(lordWealthDeficit) + ' short of wages for Farmers.' + ' They\'ll have to fire the rest.');
+          var _unemploymentDelta2 = lordWealthDeficit / farmers.props.wage / farmers.population;
+          farmers.props.unemployment += _unemploymentDelta2;
+          farmers.props.unemploymentDelta['Unpaid workers'] = _unemploymentDelta2;
+        }
+
         // compute rent by Middle Class
         var midsRentCost = mids.population * lords.props.middleClassRent;
 
-        var _subtractWithDeficit4 = subtractWithDeficit(mids.wealth, midsRentCost, lords.props.middleClassRent),
-            midsRentDeficit = _subtractWithDeficit4.deficit,
-            midsRentSpent = _subtractWithDeficit4.amount;
+        var _subtractWithDeficit5 = subtractWithDeficit(mids.wealth, midsRentCost, lords.props.middleClassRent),
+            midsRentDeficit = _subtractWithDeficit5.deficit,
+            midsRentSpent = _subtractWithDeficit5.amount;
 
         var midsWhoCantRent = 0;
         if (midsRentDeficit != 0) {
@@ -1493,9 +1535,9 @@ var gameReducer = function gameReducer(game, action) {
         // compute rent by Working Class
         var poorsRentCost = poors.population * lords.props.workingClassRent;
 
-        var _subtractWithDeficit5 = subtractWithDeficit(poors.wealth, poorsRentCost, lords.props.workingClassRent),
-            poorsRentDeficit = _subtractWithDeficit5.deficit,
-            poorsRentSpent = _subtractWithDeficit5.amount;
+        var _subtractWithDeficit6 = subtractWithDeficit(poors.wealth, poorsRentCost, lords.props.workingClassRent),
+            poorsRentDeficit = _subtractWithDeficit6.deficit,
+            poorsRentSpent = _subtractWithDeficit6.amount;
 
         if (poorsRentDeficit != 0) {
           var poorsWhoCantRent = 0;
@@ -1518,6 +1560,28 @@ var gameReducer = function gameReducer(game, action) {
         poors.wealth -= poorsRentSpent;
         poors.wealthDelta["Rent"] = -1 * poorsRentSpent;
 
+        // compute rent by Farmers
+        var farmersRentCost = farmers.population * lords.props.workingClassRent;
+
+        var _subtractWithDeficit7 = subtractWithDeficit(farmers.wealth, farmersRentCost, lords.props.workingClassRent),
+            farmersRentDeficit = _subtractWithDeficit7.deficit,
+            farmersRentSpent = _subtractWithDeficit7.amount;
+
+        if (farmersRentDeficit != 0) {
+          var farmersWhoCantRent = 0;
+          farmersWhoCantRent = Math.round(farmersRentDeficit / lords.props.workingClassRent);
+          appendTicker(game, 'The Farmers are ' + displayMoney(farmersRentDeficit) + ' short to afford rent. ' + (farmersWhoCantRent + ' have been evicted'));
+          var _unhousedDelta = farmersWhoCantRent / farmers.population - farmers.props.unhoused;
+          farmers.props.unhoused = farmersWhoCantRent / farmers.population;
+          if (_unhousedDelta > 0) {
+            farmers.props.unhousedDelta["Evicted"] = _unhousedDelta;
+          } else if (_unhousedDelta < 0) {
+            farmers.props.unhousedDelta["Housed"] = _unhousedDelta;
+          }
+        }
+        farmers.wealth -= farmersRentSpent;
+        farmers.wealthDelta["Rent"] = -1 * farmersRentSpent;
+
         // compute income to Landowners (+ taxes)
         var lordsProfit = midsRentSpent + poorsRentSpent;
         var lordsTaxesCollected = lordsProfit * lords.taxRate;
@@ -1526,6 +1590,12 @@ var gameReducer = function gameReducer(game, action) {
         lords.wealth += lordsProfit - lordsTaxesCollected;
         lords.wealthDelta['Rental profits'] = lordsProfit;
         lords.wealthDelta['Taxes paid'] = -1 * lordsTaxesCollected;
+
+        // compute production of food
+        var totalFoods = 0;
+        totalFoods += Math.round(farmersActuallyPaid * farmers.props.skill);
+        lords.props.foodInventory += totalFoods;
+        lords.props.foodInventoryDelta['Produced by Farmers'] = totalFoods;
 
         // compute production of goods (and gdp?)
         var totalGoods = Math.round(midsActuallyPaid * mids.props.skill);
@@ -1539,14 +1609,14 @@ var gameReducer = function gameReducer(game, action) {
         // compute purchase of goods by Middle Class
         var desiredMidSpend = mids.props.demand * mids.population * corps.props.price;
 
-        var _subtractWithDeficit6 = subtractWithDeficit(mids.wealth, desiredMidSpend, corps.props.price),
-            midsWealthDeficit = _subtractWithDeficit6.deficit,
-            midPurchasingPower = _subtractWithDeficit6.amount;
+        var _subtractWithDeficit8 = subtractWithDeficit(mids.wealth, desiredMidSpend, corps.props.price),
+            midsWealthDeficit = _subtractWithDeficit8.deficit,
+            midPurchasingPower = _subtractWithDeficit8.amount;
 
-        var _subtractWithDeficit7 = subtractWithDeficit(corps.props.inventory, midPurchasingPower / corps.props.price),
-            nextInventory = _subtractWithDeficit7.result,
-            inventoryDeficit = _subtractWithDeficit7.deficit,
-            inventoryBought = _subtractWithDeficit7.amount;
+        var _subtractWithDeficit9 = subtractWithDeficit(corps.props.inventory, midPurchasingPower / corps.props.price),
+            nextInventory = _subtractWithDeficit9.result,
+            inventoryDeficit = _subtractWithDeficit9.deficit,
+            inventoryBought = _subtractWithDeficit9.amount;
 
         if (inventoryDeficit != 0) {
           // not enough inventory
@@ -1573,14 +1643,14 @@ var gameReducer = function gameReducer(game, action) {
         // compute purchase of goods by Working Class
         var desiredPoorSpend = poors.props.demand * poors.population * corps.props.price;
 
-        var _subtractWithDeficit8 = subtractWithDeficit(poors.wealth, desiredPoorSpend, corps.props.price),
-            poorsWealthDeficit = _subtractWithDeficit8.deficit,
-            poorPurchasingPower = _subtractWithDeficit8.amount;
+        var _subtractWithDeficit10 = subtractWithDeficit(poors.wealth, desiredPoorSpend, corps.props.price),
+            poorsWealthDeficit = _subtractWithDeficit10.deficit,
+            poorPurchasingPower = _subtractWithDeficit10.amount;
 
-        var _subtractWithDeficit9 = subtractWithDeficit(corps.props.inventory, poorPurchasingPower / corps.props.price),
-            nextInventory2 = _subtractWithDeficit9.result,
-            inventoryDeficit2 = _subtractWithDeficit9.deficit,
-            inventoryBought2 = _subtractWithDeficit9.amount;
+        var _subtractWithDeficit11 = subtractWithDeficit(corps.props.inventory, poorPurchasingPower / corps.props.price),
+            nextInventory2 = _subtractWithDeficit11.result,
+            inventoryDeficit2 = _subtractWithDeficit11.deficit,
+            inventoryBought2 = _subtractWithDeficit11.amount;
 
         if (inventoryDeficit2 != 0) {
           // not enough inventory
@@ -1612,6 +1682,73 @@ var gameReducer = function gameReducer(game, action) {
         poors.wealth -= poorSpend;
         poors.wealthDelta['Goods purchased'] = -1 * poorSpend;
 
+        // compute purchase of goods by Farmers
+        var desiredFarmerSpend = farmers.population * corps.props.price;
+
+        var _subtractWithDeficit12 = subtractWithDeficit(farmers.wealth, desiredFarmerSpend, corps.props.price),
+            farmersWealthDeficit = _subtractWithDeficit12.deficit,
+            farmerPurchasingPower = _subtractWithDeficit12.amount;
+
+        var _subtractWithDeficit13 = subtractWithDeficit(corps.props.inventory, farmerPurchasingPower / corps.props.price),
+            nextInventory3 = _subtractWithDeficit13.result,
+            inventoryDeficit3 = _subtractWithDeficit13.deficit,
+            inventoryBought3 = _subtractWithDeficit13.amount;
+
+        if (inventoryDeficit3 != 0) {
+          // not enough inventory
+          appendTicker(game, 'Corporations are ' + inventoryDeficit3 + ' short of inventory for Farmer demand');
+          var _favorabilityDelta3 = Math.ceil(inventoryDeficit3 / farmers.population * 5);
+          // const favorabilityDelta = 3;
+          farmers.favorability -= _favorabilityDelta3;
+          farmers.favorabilityDelta['Not enough goods'] = -1 * _favorabilityDelta3 / 100;
+        }
+        if (farmersWealthDeficit != 0 && inventoryDeficit3 == 0) {
+          // can't afford
+          var farmersWhoCantAfford = Math.round(farmersWealthDeficit / corps.props.price);
+          appendTicker(game, 'Farmers are ' + displayMoney(farmersWealthDeficit) + ' short to afford goods. '
+          // + `${farmersWhoCantAfford} starved to death!`
+          );
+          var _favorabilityDelta4 = 2;
+          farmers.favorability -= _favorabilityDelta4;
+          farmers.favorabilityDelta['Can\'t afford goods'] = -1 * _favorabilityDelta4 / 100;
+        }
+        corps.props.inventory = nextInventory3;
+        corps.props.inventoryDelta['Purchased by Farmers'] = -1 * inventoryBought3;
+        var farmerSpend = inventoryBought3 * corps.props.price;
+        farmers.wealth -= farmerSpend;
+        farmers.wealthDelta['Goods purchased'] = -1 * farmerSpend;
+
+        // compute purchase/consumption of food
+        for (var _factionName3 in game.factions) {
+          var _faction2 = game.factions[_factionName3];
+
+          var _subtractWithDeficit14 = subtractWithDeficit(lords.props.foodInventory, Math.min(_faction2.population, _faction2.wealth)),
+              nextFood = _subtractWithDeficit14.result,
+              foodDeficit = _subtractWithDeficit14.deficit,
+              foodBought = _subtractWithDeficit14.amount;
+
+          if (foodDeficit > 0) {
+            appendTicker('Landowners ran out of food to sell to ' + _factionName3 + '!');
+            var favPenalty = Math.round(foodDeficit / _faction2.population * 10);
+            _faction2.favorability -= favPenalty;
+            _faction2.favorabilityDelta['Not enough food'] = -1 * favPenalty;
+          }
+          if (_faction2.wealth < _faction2.population) {
+            appendTicker(_factionName3 + ' can\'t afford food!');
+            var _favPenalty = Math.round((_faction2.population - _faction2.wealth) / _faction2.population * 10);
+            _faction2.favorability -= _favPenalty;
+            _faction2.favorabilityDelta['Can\'t afford food'] = -1 * _favPenalty;
+          }
+          if (_factionName3 != 'Landowners') {
+            _faction2.wealth -= foodBought;
+            _faction2.wealthDelta['Food purchased'] = -1 * foodBought;
+            lords.wealth += foodBought;
+            lords.wealthDelta['Food purchased by ' + _factionName3] = foodBought;
+          }
+          lords.props.foodInventory = nextFood;
+          lords.props.foodInventoryDelta['Consumed by ' + _factionName3] = -1 * foodBought;
+        }
+
         // corporate taxes
         var corpProfit = midSpend + poorSpend;
         var corpTaxesCollected = corpProfit * corps.taxRate;
@@ -1622,48 +1759,48 @@ var gameReducer = function gameReducer(game, action) {
         corps.wealthDelta['Taxes paid'] = -1 * corpTaxesCollected;
 
         // upkeep costs
-        for (var _factionName3 in game.factions) {
-          var _faction2 = game.factions[_factionName3];
-          if (_faction2.props.upkeepCosts > 0) {
-            var _subtractWithDeficit10 = subtractWithDeficit(_faction2.wealth, _faction2.props.upkeepCosts),
-                upkeepDeficit = _subtractWithDeficit10.deficit,
-                wealthSpent = _subtractWithDeficit10.amount;
+        for (var _factionName4 in game.factions) {
+          var _faction3 = game.factions[_factionName4];
+          if (_faction3.props.upkeepCosts > 0) {
+            var _subtractWithDeficit15 = subtractWithDeficit(_faction3.wealth, _faction3.props.upkeepCosts),
+                upkeepDeficit = _subtractWithDeficit15.deficit,
+                wealthSpent = _subtractWithDeficit15.amount;
 
             if (upkeepDeficit != 0) {
-              var favPenalty = Math.round(upkeepDeficit / _faction2.props.upkeepCosts * 10);
-              appendTicker(game, _factionName3 + ' can\'t afford upkeep, reducing favorability by ' + ('' + displayPercent(favPenalty / 100)));
-              _faction2.favorability -= favPenalty;
-              _faction2.favorabilityDelta['Can\'t afford upkeep'] = -1 * favPenalty / 100;
+              var _favPenalty2 = Math.round(upkeepDeficit / _faction3.props.upkeepCosts * 10);
+              appendTicker(game, _factionName4 + ' can\'t afford upkeep, reducing favorability by ' + ('' + displayPercent(_favPenalty2 / 100)));
+              _faction3.favorability -= _favPenalty2;
+              _faction3.favorabilityDelta['Can\'t afford upkeep'] = -1 * _favPenalty2 / 100;
             }
-            _faction2.wealth -= wealthSpent;
-            _faction2.wealthDelta['Upkeep Costs'] = -1 * wealthSpent;
+            _faction3.wealth -= wealthSpent;
+            _faction3.wealthDelta['Upkeep Costs'] = -1 * wealthSpent;
           }
         }
 
         // compute favorability (gdp change, taxRate, wealth change, unemployment)
-        for (var _factionName4 in game.factions) {
-          var _faction3 = game.factions[_factionName4];
-          if ((_faction3.wealth < prevWealth[_factionName4] || _faction3.wealth < 10) && (_factionName4 == 'Working Class' && _faction3.wealth < 100000 || _factionName4 != 'Working Class') && (_factionName4 == 'Middle Class' && _faction3.wealth < 250000 || _factionName4 != 'Middle Class')) {
-            _faction3.favorability -= 1;
-            _faction3.favorabilityDelta['Wealth decreasing'] = -1 / 100;
-          } else if (_faction3.wealth - prevWealth[_factionName4] > 0 && _faction3.wealth > 100) {
-            _faction3.favorability += 1;
-            _faction3.favorabilityDelta['Wealth increasing'] = 1 / 100;
+        for (var _factionName5 in game.factions) {
+          var _faction4 = game.factions[_factionName5];
+          if ((_faction4.wealth < prevWealth[_factionName5] || _faction4.wealth < 10) && (_factionName5 == 'Farmers' && _faction4.wealth < 100000 || _factionName5 != 'Farmers') && (_factionName5 == 'Working Class' && _faction4.wealth < 100000 || _factionName5 != 'Working Class') && (_factionName5 == 'Middle Class' && _faction4.wealth < 250000 || _factionName5 != 'Middle Class')) {
+            _faction4.favorability -= 1;
+            _faction4.favorabilityDelta['Wealth decreasing'] = -1 / 100;
+          } else if (_faction4.wealth - prevWealth[_factionName5] > 0 && _faction4.wealth > 100) {
+            _faction4.favorability += 1;
+            _faction4.favorabilityDelta['Wealth increasing'] = 1 / 100;
           }
 
-          if (_faction3.props.unemployment > 0.1) {
-            var _favorabilityDelta3 = Math.floor(_faction3.props.unemployment * 5) + 1;
+          if (_faction4.props.unemployment > 0.1) {
+            var _favorabilityDelta5 = Math.floor(_faction4.props.unemployment * 5) + 1;
             // const favorabilityDelta = 1;
-            _faction3.favorability -= _favorabilityDelta3;
-            _faction3.favorabilityDelta['High unemployment'] = -1 * _favorabilityDelta3 / 100;
+            _faction4.favorability -= _favorabilityDelta5;
+            _faction4.favorabilityDelta['High unemployment'] = -1 * _favorabilityDelta5 / 100;
           }
-          if (_faction3.props.unhoused > 0) {
-            var _favorabilityDelta4 = Math.floor(_faction3.props.unhoused * 10);
-            _faction3.favorability -= _favorabilityDelta4;
-            _faction3.favorabilityDelta['Homelessness'] = -1 * _favorabilityDelta4 / 100;
+          if (_faction4.props.unhoused > 0) {
+            var _favorabilityDelta6 = Math.floor(_faction4.props.unhoused * 10);
+            _faction4.favorability -= _favorabilityDelta6;
+            _faction4.favorabilityDelta['Homelessness'] = -1 * _favorabilityDelta6 / 100;
           }
-          _faction3.favorability = clamp(_faction3.favorability, 0, 100);
-          _faction3.favTotal += _faction3.favorability;
+          _faction4.favorability = clamp(_faction4.favorability, 0, 100);
+          _faction4.favTotal += _faction4.favorability;
         }
 
         // middle/lower class
@@ -1671,16 +1808,14 @@ var gameReducer = function gameReducer(game, action) {
 
         // compute social mobility
 
-        // army
-
         // landowners
         // produce food, charge rent
 
 
         // round all props that need to be
-        for (var _factionName5 in game.factions) {
-          var _faction4 = game.factions[_factionName5];
-          _faction4.population = Math.floor(_faction4.population);
+        for (var _factionName6 in game.factions) {
+          var _faction5 = game.factions[_factionName6];
+          _faction5.population = Math.floor(_faction5.population);
         }
         corps.props.inventory = Math.floor(corps.props.inventory);
 
@@ -1893,7 +2028,7 @@ var initEventsSystem = function initEventsSystem(store) {
 };
 
 module.exports = { initEventsSystem: initEventsSystem };
-},{"../UI/PolicyModal.react":1,"../config":2,"bens_utils":40,"react":46}],9:[function(require,module,exports){
+},{"../UI/PolicyModal.react":1,"../config":2,"bens_utils":40,"react":47}],9:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -2044,7 +2179,7 @@ var handleGameWon = function handleGameWon(store, dispatch, state, reason) {
 };
 
 module.exports = { initGameOverSystem: initGameOverSystem };
-},{"bens_ui_components":33,"react":46}],10:[function(require,module,exports){
+},{"bens_ui_components":33,"react":47}],10:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -2271,9 +2406,9 @@ function Faction(properties) {
     ));
   }
   var height = 187;
-  if (name == 'Corporations' || name == 'Military' || name == 'Landowners') {
-    height = 168.5;
-  }
+  // if (name == 'Corporations') {
+  //   height = 168.5;
+  // }
 
   return React.createElement(
     'div',
@@ -2431,7 +2566,7 @@ function Value(props) {
 }
 
 module.exports = Game;
-},{"../config":2,"../systems/eventsSystem":8,"../systems/gameOverSystem":9,"../utils/display":14,"./Indicator.react":11,"./PolicyModal.react":13,"bens_ui_components":33,"react":46}],11:[function(require,module,exports){
+},{"../config":2,"../systems/eventsSystem":8,"../systems/gameOverSystem":9,"../utils/display":14,"./Indicator.react":11,"./PolicyModal.react":13,"bens_ui_components":33,"react":47}],11:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -2490,7 +2625,7 @@ var usePrevious = function usePrevious(value) {
 };
 
 module.exports = Indicator;
-},{"react":46}],12:[function(require,module,exports){
+},{"react":47}],12:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -2565,9 +2700,9 @@ function PlayModal(props) {
 }
 
 module.exports = Main;
-},{"./Game.react":10,"bens_ui_components":33,"react":46}],13:[function(require,module,exports){
+},{"./Game.react":10,"bens_ui_components":33,"react":47}],13:[function(require,module,exports){
 arguments[4][1][0].apply(exports,arguments)
-},{"../config":2,"../utils/display":14,"bens_ui_components":33,"dup":1,"react":46}],14:[function(require,module,exports){
+},{"../config":2,"../utils/display":14,"bens_ui_components":33,"dup":1,"react":47}],14:[function(require,module,exports){
 'use strict';
 
 var displayMoney = function displayMoney(money) {
@@ -2752,7 +2887,7 @@ var AudioWidget = function AudioWidget(props) {
 };
 
 module.exports = AudioWidget;
-},{"./Button.react":19,"react":46}],19:[function(require,module,exports){
+},{"./Button.react":19,"react":47}],19:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -2839,7 +2974,7 @@ function Button(props) {
 }
 
 module.exports = Button;
-},{"react":46}],20:[function(require,module,exports){
+},{"react":47}],20:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -2983,7 +3118,7 @@ function withPropsChecker(WrappedComponent) {
 }
 
 module.exports = React.memo(Canvas);
-},{"react":46}],21:[function(require,module,exports){
+},{"react":47}],21:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -3023,7 +3158,7 @@ function Checkbox(props) {
 }
 
 module.exports = Checkbox;
-},{"react":46}],22:[function(require,module,exports){
+},{"react":47}],22:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -3043,7 +3178,7 @@ function Divider(props) {
 }
 
 module.exports = Divider;
-},{"react":46}],23:[function(require,module,exports){
+},{"react":47}],23:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -3084,7 +3219,7 @@ var Dropdown = function Dropdown(props) {
 };
 
 module.exports = Dropdown;
-},{"react":46}],24:[function(require,module,exports){
+},{"react":47}],24:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -3116,7 +3251,7 @@ var InfoCard = function InfoCard(props) {
 };
 
 module.exports = InfoCard;
-},{"react":46}],25:[function(require,module,exports){
+},{"react":47}],25:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -3198,7 +3333,7 @@ function Modal(props) {
 }
 
 module.exports = Modal;
-},{"./Button.react":19,"bens_utils":40,"react":46}],26:[function(require,module,exports){
+},{"./Button.react":19,"bens_utils":40,"react":47}],26:[function(require,module,exports){
 'use strict';
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
@@ -3288,7 +3423,7 @@ var submitValue = function submitValue(onChange, nextVal, onlyInt) {
 };
 
 module.exports = NumberField;
-},{"react":46}],27:[function(require,module,exports){
+},{"react":47}],27:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -3655,7 +3790,7 @@ var PlotWatcher = function PlotWatcher(props) {
 };
 
 module.exports = PlotWatcher;
-},{"./Button.react":19,"./Canvas.react":20,"react":46}],28:[function(require,module,exports){
+},{"./Button.react":19,"./Canvas.react":20,"react":47}],28:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -3739,7 +3874,7 @@ var quitGameModal = function quitGameModal(dispatch) {
 };
 
 module.exports = QuitButton;
-},{"./Button.react":19,"./Modal.react":25,"bens_utils":40,"react":46}],29:[function(require,module,exports){
+},{"./Button.react":19,"./Modal.react":25,"bens_utils":40,"react":47}],29:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -3828,7 +3963,7 @@ var RadioPicker = function (_React$Component) {
 }(React.Component);
 
 module.exports = RadioPicker;
-},{"react":46}],30:[function(require,module,exports){
+},{"react":47}],30:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -3898,7 +4033,7 @@ function Slider(props) {
 }
 
 module.exports = Slider;
-},{"./NumberField.react":26,"react":46}],31:[function(require,module,exports){
+},{"./NumberField.react":26,"react":47}],31:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -4203,7 +4338,7 @@ function Table(props) {
 }
 
 module.exports = Table;
-},{"./Button.react":19,"./Dropdown.react":23,"react":46}],32:[function(require,module,exports){
+},{"./Button.react":19,"./Dropdown.react":23,"react":47}],32:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -34884,7 +35019,7 @@ if (
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":51,"react":46,"scheduler":50}],42:[function(require,module,exports){
+},{"_process":52,"react":47,"scheduler":51}],42:[function(require,module,exports){
 /**
  * @license React
  * react-dom.production.min.js
@@ -35209,7 +35344,36 @@ exports.hydrateRoot=function(a,b,c){if(!ol(a))throw Error(p(405));var d=null!=c&
 e);return new nl(b)};exports.render=function(a,b,c){if(!pl(b))throw Error(p(200));return sl(null,a,b,!1,c)};exports.unmountComponentAtNode=function(a){if(!pl(a))throw Error(p(40));return a._reactRootContainer?(Sk(function(){sl(null,null,a,!1,function(){a._reactRootContainer=null;a[uf]=null})}),!0):!1};exports.unstable_batchedUpdates=Rk;
 exports.unstable_renderSubtreeIntoContainer=function(a,b,c,d){if(!pl(c))throw Error(p(200));if(null==a||void 0===a._reactInternals)throw Error(p(38));return sl(a,b,c,!1,d)};exports.version="18.2.0-next-9e3b772b8-20220608";
 
-},{"react":46,"scheduler":50}],43:[function(require,module,exports){
+},{"react":47,"scheduler":51}],43:[function(require,module,exports){
+(function (process){(function (){
+'use strict';
+
+var m = require('react-dom');
+if (process.env.NODE_ENV === 'production') {
+  exports.createRoot = m.createRoot;
+  exports.hydrateRoot = m.hydrateRoot;
+} else {
+  var i = m.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+  exports.createRoot = function(c, o) {
+    i.usingClientEntryPoint = true;
+    try {
+      return m.createRoot(c, o);
+    } finally {
+      i.usingClientEntryPoint = false;
+    }
+  };
+  exports.hydrateRoot = function(c, h, o) {
+    i.usingClientEntryPoint = true;
+    try {
+      return m.hydrateRoot(c, h, o);
+    } finally {
+      i.usingClientEntryPoint = false;
+    }
+  };
+}
+
+}).call(this)}).call(this,require('_process'))
+},{"_process":52,"react-dom":44}],44:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -35251,7 +35415,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react-dom.development.js":41,"./cjs/react-dom.production.min.js":42,"_process":51}],44:[function(require,module,exports){
+},{"./cjs/react-dom.development.js":41,"./cjs/react-dom.production.min.js":42,"_process":52}],45:[function(require,module,exports){
 (function (process){(function (){
 /**
  * @license React
@@ -37994,7 +38158,7 @@ if (
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":51}],45:[function(require,module,exports){
+},{"_process":52}],46:[function(require,module,exports){
 /**
  * @license React
  * react.production.min.js
@@ -38022,7 +38186,7 @@ exports.useCallback=function(a,b){return U.current.useCallback(a,b)};exports.use
 exports.useInsertionEffect=function(a,b){return U.current.useInsertionEffect(a,b)};exports.useLayoutEffect=function(a,b){return U.current.useLayoutEffect(a,b)};exports.useMemo=function(a,b){return U.current.useMemo(a,b)};exports.useReducer=function(a,b,e){return U.current.useReducer(a,b,e)};exports.useRef=function(a){return U.current.useRef(a)};exports.useState=function(a){return U.current.useState(a)};exports.useSyncExternalStore=function(a,b,e){return U.current.useSyncExternalStore(a,b,e)};
 exports.useTransition=function(){return U.current.useTransition()};exports.version="18.2.0";
 
-},{}],46:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -38033,7 +38197,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react.development.js":44,"./cjs/react.production.min.js":45,"_process":51}],47:[function(require,module,exports){
+},{"./cjs/react.development.js":45,"./cjs/react.production.min.js":46,"_process":52}],48:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -38767,7 +38931,7 @@ exports.createStore = createStore;
 exports.legacy_createStore = legacy_createStore;
 
 }).call(this)}).call(this,require('_process'))
-},{"@babel/runtime/helpers/objectSpread2":17,"_process":51}],48:[function(require,module,exports){
+},{"@babel/runtime/helpers/objectSpread2":17,"_process":52}],49:[function(require,module,exports){
 (function (process,setImmediate){(function (){
 /**
  * @license React
@@ -39405,7 +39569,7 @@ if (
 }
 
 }).call(this)}).call(this,require('_process'),require("timers").setImmediate)
-},{"_process":51,"timers":52}],49:[function(require,module,exports){
+},{"_process":52,"timers":53}],50:[function(require,module,exports){
 (function (setImmediate){(function (){
 /**
  * @license React
@@ -39428,7 +39592,7 @@ exports.unstable_scheduleCallback=function(a,b,c){var d=exports.unstable_now();"
 exports.unstable_shouldYield=M;exports.unstable_wrapCallback=function(a){var b=y;return function(){var c=y;y=b;try{return a.apply(this,arguments)}finally{y=c}}};
 
 }).call(this)}).call(this,require("timers").setImmediate)
-},{"timers":52}],50:[function(require,module,exports){
+},{"timers":53}],51:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -39439,7 +39603,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/scheduler.development.js":48,"./cjs/scheduler.production.min.js":49,"_process":51}],51:[function(require,module,exports){
+},{"./cjs/scheduler.development.js":49,"./cjs/scheduler.production.min.js":50,"_process":52}],52:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -39625,7 +39789,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],52:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 (function (setImmediate,clearImmediate){(function (){
 var nextTick = require('process/browser.js').nextTick;
 var apply = Function.prototype.apply;
@@ -39704,4 +39868,4 @@ exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate :
   delete immediateIds[id];
 };
 }).call(this)}).call(this,require("timers").setImmediate,require("timers").clearImmediate)
-},{"process/browser.js":51,"timers":52}]},{},[3]);
+},{"process/browser.js":52,"timers":53}]},{},[3]);

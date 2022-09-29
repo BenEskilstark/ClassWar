@@ -45,6 +45,8 @@ const config = {
 
     ['Corporations']: {
       name: 'Corporations',
+      description: 'Businesses that employ the Working ' +
+        'and Middle Classes to produce goods people need',
       wealth: 3500000,
       taxRate: val(0.2, 0, 0.4),
       subsidy: val(0, 10000, 50000),
@@ -58,39 +60,62 @@ const config = {
       },
     },
 
-    ['Military']: {
-      name: 'Military',
-      wealth: 500000,
-      taxRate: 0,
-      subsidy: val(0, 25000, 75000),
-      population: val(500, 1000, 5000, true),
-      favorability: 50,
-      favTotal: 0,
-      props: {
-        upkeepCosts: val(25000, 25000, 50000), // cost per turn from their wealth
-      },
-    },
+    // ['Military']: {
+    //   name: 'Military',
+    //   wealth: 500000,
+    //   taxRate: 0,
+    //   subsidy: val(0, 25000, 75000),
+    //   population: val(500, 1000, 5000, true),
+    //   favorability: 50,
+    //   favTotal: 0,
+    //   props: {
+    //     upkeepCosts: val(25000, 25000, 50000), // cost per turn from their wealth
+    //   },
+    // },
 
     ['Landowners']: {
       name: 'Landowners',
+      description: 'The landed aristocracy owns the land where people live and farm',
       wealth: 1000000,
       taxRate: val(0.2, 0.2, 0.6),
-     subsidy: val(0, 1000, 5000),
+      subsidy: val(0, 1000, 5000),
       population: val(50, 1, 100, true),
       favorability: 50,
       favTotal: 0,
       props: {
         workingClassRent: val(2, 1, 3), // rent charged to working class per turn
         middleClassRent: val(10, 5, 10), // charged to middle class per turn
+        hiringRate: 0.1,
+        foodInventory: 100000, // how much food is available
+      },
+    },
+
+    ['Intelligentsia']: {
+      name: 'Intelligentsia',
+      description: 'The intellectual and cultural elite of society. From time to' +
+        ' time they produce movies that people like and skill gains that increase' +
+        ' productivity',
+      wealth: 1000000,
+      taxRate: 0,
+      subsidy: val(0, 25000, 75000),
+      population: val(1000, 100, 10000),
+      favorability: 50,
+      favTotal: 0,
+      props: {
+        upkeepCosts: val(25000, 25000, 50000), // cost per turn from their wealth
+        universities: 1, // makes skill increases more likely
+        movieStudios: 1, // makes favorability increases more likely
       },
     },
 
     ['Working Class']: {
       name: 'Working Class',
+      description: 'Factory workers are employed by the corporations and work to ' +
+        'produce the goods people need',
       wealth: 500000,
       taxRate: val(0.3, 0, 0.4),
       subsidy: val(0, 0, 10000),
-      population: val(10000, 1000, 50000),
+      population: val(10000, 10000, 50000),
       favorability: 50,
       favTotal: 0,
       props: {
@@ -101,8 +126,28 @@ const config = {
       },
     },
 
+    ['Farmers']: {
+      name: 'Farmers',
+      description: 'Farmers work the land owned by landowners to produce food ' +
+        'which everyone needs to eat',
+      wealth: 500000,
+      taxRate: 0.01,
+      subsidy: val(0, 25000, 75000),
+      population: val(10000, 20000, 50000),
+      favorability: 50,
+      favTotal: 0,
+      props: {
+        wage: val(3, 3, 6), // wage going to each employed person
+        unemployment: val(0.1, 0, 0.2), // rate of not employed
+        skill: 2, // how much food each employed farmed produces
+        unhoused: 0, // can't afford housing
+      },
+    },
+
     ['Middle Class']: {
       name: 'Middle Class',
+      description: 'Middle class workers also work for the corporations and contribute' +
+        ' to the production of goods proportional to their skill',
       wealth: 750000,
       taxRate: val(0.4, 0, 0.4),
       subsidy: val(0, 5000, 15000),
@@ -117,27 +162,6 @@ const config = {
       },
     },
 
-    ['Intelligentsia']: {
-      name: 'Intelligentsia',
-      wealth: 1000000,
-      taxRate: 0,
-      subsidy: val(0, 25000, 75000),
-      population: val(1000, 100, 10000),
-      favorability: 50,
-      favTotal: 0,
-      props: {
-        upkeepCosts: val(25000, 25000, 50000), // cost per turn from their wealth
-        universities: 1, // makes skill increases more likely
-        movieStudios: 1, // makes favorability increases more likely
-      },
-    },
-
-
-    // Intelligentsia -- produce production and skill gains (+ subsidy)
-
-    // Military -- cost money for upkeep (subsidy)
-
-    // Landowners -- produce food, charge rent
   },
 };
 
@@ -168,7 +192,7 @@ const policies = [
     name: 'Reduce Middle Class Subsidies',
     description: 'We must reel in the nanny state and keep the money for more important ' +
       'societal projects.',
-    support: ['Landowners', 'Corporations', 'Military'],
+    support: ['Landowners', 'Corporations'],
     oppose: ['Middle Class'],
     changes: (game) => {
       return [{
@@ -189,7 +213,7 @@ const policies = [
     name: 'Reduce Working Class Subsidies',
     description: 'We must reel in the nanny state and keep the money for more important ' +
       'societal projects.',
-    support: ['Landowners', 'Corporations', 'Military'],
+    support: ['Landowners', 'Corporations'],
     oppose: ['Working Class'],
     changes: (game) => {
       return [{
@@ -209,7 +233,7 @@ const policies = [
   {
     name: 'Reduce Subsidy to Intelligentsia',
     description: 'These elitists are wasting money.',
-    support: ['Landowners', 'Corporations', 'Military', 'Working Class'],
+    support: ['Landowners', 'Corporations', 'Working Class'],
     oppose: ['Intelligentsia'],
     changes: (game) => {
       return [{
@@ -227,13 +251,13 @@ const policies = [
     },
   },
   {
-    name: 'Reduce Subsidy to Military',
-    description: 'Stop the warmongering and focus on what matters!',
-    support: ['Intelligentsia'],
-    oppose: ['Military'],
+    name: 'Reduce Subsidy to Farmers',
+    description: 'Farmers are taking too much from the government',
+    support: ['Landowners'],
+    oppose: ['Farmers'],
     changes: (game) => {
       return [{
-        path: ['factions', 'Military', 'subsidy'],
+        path: ['factions', 'Farmers', 'subsidy'],
         operation: 'MULTIPLY',
         value: val(0.5, 0.4, 0.8),
       }];
@@ -243,7 +267,7 @@ const policies = [
       if (game.capital < 100000) {
         mult = 4;
       }
-      return mult * (100 - game.factions['Intelligentsia'].favorability);
+      return mult * (100 - game.factions['Landowners'].favorability);
     },
   },
   {
@@ -659,7 +683,7 @@ const policies = [
     isRadical: true,
     description: "We need radical solutions to get the Middle Class back on track",
     support: ['Middle Class'],
-    oppose: ['Corporations', 'Landowners', 'Military'],
+    oppose: ['Corporations', 'Landowners'],
     changes: (game) => {
       const handout = Math.min(val(50000, 50000, 250000), game.capital);
       return [
@@ -803,7 +827,7 @@ const policies = [
     isRadical: true,
     description: "We need radical solutions to get the Working Class back on track",
     support: ['Working Class'],
-    oppose: ['Corporations', 'Landowners', 'Military'],
+    oppose: ['Corporations', 'Landowners'],
     changes: (game) => {
       const handout = Math.min(val(100000, 50000, 150000), game.capital);
       return [
@@ -846,7 +870,7 @@ const policies = [
     name: "Break the Strike!",
     isRadical: true,
     description: "We need radical solutions to get the Working Class back on track",
-    support: ['Corporations', 'Landowners', 'Military'],
+    support: ['Corporations', 'Landowners'],
     oppose: ['Working Class'],
     changes: (game) => {
       return [

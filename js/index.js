@@ -3,7 +3,7 @@
 const {createStore} = require('redux');
 const Main = require('./ui/Main.react');
 const React = require('react');
-const ReactDOM = require('react-dom');
+const ReactDOM = require('react-dom/client');
 const {rootReducer} = require('./reducers/rootReducer');
 
 import type {Store} from './types';

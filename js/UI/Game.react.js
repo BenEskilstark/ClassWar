@@ -199,9 +199,9 @@ function Faction(properties): React.Node {
     );
   }
   let height = 187;
-  if (name == 'Corporations' || name == 'Military' || name == 'Landowners') {
-    height = 168.5;
-  }
+  // if (name == 'Corporations') {
+  //   height = 168.5;
+  // }
 
   return (
     <div

@@ -146,7 +146,7 @@ const gameReducer = (game, action) => {
       const mids = game.factions['Middle Class'];
       const poors = game.factions['Working Class'];
       const nerds = game.factions['Intelligentsia'];
-      const army = game.factions['Military'];
+      const farmers = game.factions['Farmers'];
       const lords = game.factions['Landowners'];
 
 
@@ -183,6 +183,12 @@ const gameReducer = (game, action) => {
       poors.props.unemploymentDelta['Hired by Corporations'] =
         nextPoorsUnemployment - poors.props.unemployment;
       poors.props.unemployment = nextPoorsUnemployment;
+
+      // compute people hired by landowners
+      const nextFarmersUnemployment = farmers.props.unemployment * (1 -  lords.props.hiringRate);
+      farmers.props.unemploymentDelta['Hired by Landowners'] =
+        nextFarmersUnemployment - farmers.props.unemployment;
+      farmers.props.unemployment = nextFarmersUnemployment;
 
 
       // compute payment to middle class (with tax)
@@ -250,6 +256,37 @@ const gameReducer = (game, action) => {
         poors.props.unemploymentDelta['Unpaid workers'] = unemploymentDelta;
       }
 
+      // compute payment to farmers (with tax)
+      const employedFarmers = farmers.population * (1 - farmers.props.unemployment);
+      const farmerPay = employedFarmers * farmers.props.wage;
+      let {
+        result: nextLordWealth,
+        deficit: lordWealthDeficit,
+        amount: farmersWagesPaid,
+      } = subtractWithDeficit(lords.wealth, farmerPay, farmers.props.wage);
+      const farmersActuallyPaid = lordWealthDeficit == 0
+        ? employedFarmers
+        : farmersWagesPaid / farmers.props.wage;
+      const farmersTaxesCollected = farmersWagesPaid * farmers.taxRate;
+      game.capital += farmersTaxesCollected;
+      game.capitalDelta['Farmers\' taxes'] = farmersTaxesCollected;
+      farmers.wealth += farmersWagesPaid - farmersTaxesCollected;
+      farmers.wealthDelta['Wages paid'] = farmersWagesPaid;
+      farmers.wealthDelta['Taxes paid'] = -1 * farmersTaxesCollected;
+      lords.wealth = nextLordWealth;
+      lords.wealthDelta['Farmers\' wages paid'] = -1 * farmersWagesPaid;
+      // compute unfavorability/unemployement if lord can't pay
+      if (lordWealthDeficit != 0) {
+        appendTicker(game,
+          `Landowners are ${displayMoney(lordWealthDeficit)} short of wages for Farmers.`+
+          ` They'll have to fire the rest.`
+        );
+        const unemploymentDelta =
+          (lordWealthDeficit / farmers.props.wage) / farmers.population;
+        farmers.props.unemployment += unemploymentDelta;
+        farmers.props.unemploymentDelta['Unpaid workers'] = unemploymentDelta;
+      }
+
 
       // compute rent by Middle Class
       const midsRentCost = mids.population * lords.props.middleClassRent;
@@ -307,6 +344,34 @@ const gameReducer = (game, action) => {
       poors.wealth -= poorsRentSpent;
       poors.wealthDelta["Rent"] = -1 * poorsRentSpent;
 
+      // compute rent by Farmers
+      const farmersRentCost = farmers.population * lords.props.workingClassRent;
+      let {
+        // result: nextMidsWealth,
+        deficit: farmersRentDeficit,
+        amount: farmersRentSpent,
+      } = subtractWithDeficit(farmers.wealth, farmersRentCost, lords.props.workingClassRent);
+      if (farmersRentDeficit != 0) {
+        let farmersWhoCantRent = 0;
+        farmersWhoCantRent = Math.round(
+          farmersRentDeficit / lords.props.workingClassRent
+        );
+        appendTicker(game,
+          `The Farmers are ${displayMoney(farmersRentDeficit)} short to afford rent. ` +
+          `${farmersWhoCantRent} have been evicted`,
+        );
+        const unhousedDelta = farmersWhoCantRent / farmers.population - farmers.props.unhoused;
+        farmers.props.unhoused = farmersWhoCantRent / farmers.population;
+        if (unhousedDelta > 0) {
+          farmers.props.unhousedDelta["Evicted"] = unhousedDelta;
+        } else if (unhousedDelta < 0) {
+          farmers.props.unhousedDelta["Housed"] = unhousedDelta;
+        }
+
+      }
+      farmers.wealth -= farmersRentSpent;
+      farmers.wealthDelta["Rent"] = -1 * farmersRentSpent;
+
 
       // compute income to Landowners (+ taxes)
       const lordsProfit = midsRentSpent + poorsRentSpent;
@@ -317,6 +382,11 @@ const gameReducer = (game, action) => {
       lords.wealthDelta['Rental profits'] = lordsProfit;
       lords.wealthDelta['Taxes paid'] = -1 * lordsTaxesCollected;
 
+      // compute production of food
+      let totalFoods = 0;
+      totalFoods += Math.round(farmersActuallyPaid * farmers.props.skill);
+      lords.props.foodInventory += totalFoods;
+      lords.props.foodInventoryDelta['Produced by Farmers'] = totalFoods;
 
       // compute production of goods (and gdp?)
       let totalGoods = Math.round(midsActuallyPaid * mids.props.skill);
@@ -411,6 +481,82 @@ const gameReducer = (game, action) => {
       poors.wealthDelta['Goods purchased'] = -1 * poorSpend;
 
 
+      // compute purchase of goods by Farmers
+      const desiredFarmerSpend = farmers.population * corps.props.price;
+      let {
+        // result: nextFarmersWealth,
+        deficit: farmersWealthDeficit,
+        amount: farmerPurchasingPower,
+      } = subtractWithDeficit(farmers.wealth, desiredFarmerSpend, corps.props.price);
+      let {
+        result: nextInventory3,
+        deficit: inventoryDeficit3,
+        amount: inventoryBought3,
+      } = subtractWithDeficit(corps.props.inventory, farmerPurchasingPower / corps.props.price);
+      if (inventoryDeficit3 != 0) { // not enough inventory
+        appendTicker(game,
+          `Corporations are ${inventoryDeficit3} short of inventory for Farmer demand`,
+        );
+        const favorabilityDelta = Math.ceil(inventoryDeficit3 / farmers.population * 5);
+        // const favorabilityDelta = 3;
+        farmers.favorability -= favorabilityDelta;
+        farmers.favorabilityDelta['Not enough goods'] = -1 * favorabilityDelta / 100;
+      }
+      if (farmersWealthDeficit != 0 && inventoryDeficit3 == 0) { // can't afford
+        const farmersWhoCantAfford = Math.round(farmersWealthDeficit / corps.props.price);
+        appendTicker(game,
+          `Farmers are ${displayMoney(farmersWealthDeficit)} short to afford goods. `
+          // + `${farmersWhoCantAfford} starved to death!`
+        );
+        const favorabilityDelta = 2;
+        farmers.favorability -= favorabilityDelta;
+        farmers.favorabilityDelta['Can\'t afford goods'] = -1 * favorabilityDelta / 100;
+      }
+      corps.props.inventory = nextInventory3;
+      corps.props.inventoryDelta['Purchased by Farmers'] = -1 * inventoryBought3;
+      const farmerSpend = inventoryBought3 * corps.props.price;
+      farmers.wealth -= farmerSpend;
+      farmers.wealthDelta['Goods purchased'] = -1 * farmerSpend;
+
+
+      // compute purchase/consumption of food
+      for (const factionName in game.factions) {
+        const faction = game.factions[factionName];
+        let {
+          result: nextFood,
+          deficit: foodDeficit,
+          amount: foodBought,
+        } = subtractWithDeficit(
+          lords.props.foodInventory, Math.min(faction.population, faction.wealth),
+        );
+        if (foodDeficit > 0) {
+          appendTicker(
+            `Landowners ran out of food to sell to ${factionName}!`
+          );
+          let favPenalty = Math.round(foodDeficit / faction.population * 10);
+          faction.favorability -= favPenalty;
+          faction.favorabilityDelta['Not enough food'] = -1 * favPenalty;
+        }
+        if (faction.wealth < faction.population) {
+          appendTicker(
+            `${factionName} can't afford food!`
+          );
+          let favPenalty = Math.round(
+            (faction.population - faction.wealth) / faction.population * 10);
+          faction.favorability -= favPenalty;
+          faction.favorabilityDelta['Can\'t afford food'] = -1 * favPenalty;
+        }
+        if (factionName != 'Landowners') {
+          faction.wealth -= foodBought;
+          faction.wealthDelta['Food purchased'] = -1 * foodBought;
+          lords.wealth += foodBought;
+          lords.wealthDelta['Food purchased by ' + factionName] = foodBought;
+        }
+        lords.props.foodInventory = nextFood;
+        lords.props.foodInventoryDelta[`Consumed by ${factionName}`] = -1 * foodBought;
+      }
+
+
       // corporate taxes
       const corpProfit = midSpend + poorSpend;
       const corpTaxesCollected = corpProfit * corps.taxRate;
@@ -451,6 +597,10 @@ const gameReducer = (game, action) => {
         if (
           (faction.wealth < prevWealth[factionName] || faction.wealth < 10) &&
           (
+            (factionName == 'Farmers' && faction.wealth < 100000)
+            || factionName != 'Farmers'
+          ) &&
+          (
             (factionName == 'Working Class' && faction.wealth < 100000)
             || factionName != 'Working Class'
           ) &&
@@ -489,8 +639,6 @@ const gameReducer = (game, action) => {
       // compute favorability (unemployment, wealth, taxRate)
 
       // compute social mobility
-
-      // army
 
       // landowners
       // produce food, charge rent
