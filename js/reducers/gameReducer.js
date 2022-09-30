@@ -155,21 +155,25 @@ const gameReducer = (game, action) => {
         const skillInc = nerds.props.universities;
         appendTicker(game,
           `Intelligentsia perfect research into making workers more productive, ` +
-          `Middle Class skill increased by ${skillInc}`,
+          `Middle Class and Farmer skill increased by ${skillInc}`,
         );
         mids.props.skill += skillInc;
         mids.props.skillDelta["University Education"] = skillInc;
+        farmers.props.skill += skillInc;
+        farmers.props.skillDelta["University Education"] = skillInc;
       }
       if ((game.time + 3) % 12 == 0) {
         const favInc = nerds.props.movieStudios;
         appendTicker(game,
           `Intelligentsia produce a movie that the people love. ` +
-          `Middle and Working Class favorabilities increased by ${favInc}`,
+          `Middle, Working Class and Farmer favorabilities increased by ${favInc}`,
         );
         mids.favorability += favInc;
         mids.favorabilityDelta["Liked movie production"] = favInc / 100;
         poors.favorability += favInc;
         poors.favorabilityDelta["Liked movie production"] = favInc / 100;
+        farmers.favorability += favInc;
+        farmers.favorabilityDelta["Liked movie production"] = favInc / 100;
       }
 
 
@@ -530,7 +534,7 @@ const gameReducer = (game, action) => {
           lords.props.foodInventory, Math.min(faction.population, faction.wealth),
         );
         if (foodDeficit > 0) {
-          appendTicker(
+          appendTicker(game,
             `Landowners ran out of food to sell to ${factionName}!`
           );
           let favPenalty = Math.round(foodDeficit / faction.population * 10);
@@ -538,7 +542,7 @@ const gameReducer = (game, action) => {
           faction.favorabilityDelta['Not enough food'] = -1 * favPenalty;
         }
         if (faction.wealth < faction.population) {
-          appendTicker(
+          appendTicker(game,
             `${factionName} can't afford food!`
           );
           let favPenalty = Math.round(

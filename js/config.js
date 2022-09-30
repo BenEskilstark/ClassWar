@@ -42,24 +42,6 @@ const config = {
   wagesDeficitMult: 5,
 
   factions: {
-
-    ['Corporations']: {
-      name: 'Corporations',
-      description: 'Businesses that employ the Working ' +
-        'and Middle Classes to produce goods people need',
-      wealth: 3500000,
-      taxRate: val(0.2, 0, 0.4),
-      subsidy: val(0, 10000, 50000),
-      population: val(50, 1, 100, true),
-      favorability: 50,
-      favTotal: 0,
-      props: {
-        hiringRate: 0.1,
-        inventory: 1000000,
-        price: val(5, 3, 6),
-      },
-    },
-
     // ['Military']: {
     //   name: 'Military',
     //   wealth: 500000,
@@ -90,6 +72,23 @@ const config = {
       },
     },
 
+    ['Corporations']: {
+      name: 'Corporations',
+      description: 'Businesses that employ the Working ' +
+        'and Middle Classes to produce goods people need',
+      wealth: 3500000,
+      taxRate: val(0.2, 0, 0.4),
+      subsidy: val(0, 10000, 50000),
+      population: val(50, 1, 100, true),
+      favorability: 50,
+      favTotal: 0,
+      props: {
+        hiringRate: 0.1,
+        inventory: 1000000,
+        price: val(5, 3, 6),
+      },
+    },
+
     ['Intelligentsia']: {
       name: 'Intelligentsia',
       description: 'The intellectual and cultural elite of society. From time to' +
@@ -108,24 +107,6 @@ const config = {
       },
     },
 
-    ['Working Class']: {
-      name: 'Working Class',
-      description: 'Factory workers are employed by the corporations and work to ' +
-        'produce the goods people need',
-      wealth: 500000,
-      taxRate: val(0.3, 0, 0.4),
-      subsidy: val(0, 0, 10000),
-      population: val(10000, 10000, 50000),
-      favorability: 50,
-      favTotal: 0,
-      props: {
-        unemployment: val(0.1, 0, 0.3), // rate of not employed
-        wage: val(3, 4, 7), // wage going to each employed person
-        demand: 1, // how much inventory each person wants
-        unhoused: 0, // can't afford housing
-      },
-    },
-
     ['Farmers']: {
       name: 'Farmers',
       description: 'Farmers work the land owned by landowners to produce food ' +
@@ -140,6 +121,24 @@ const config = {
         wage: val(3, 3, 6), // wage going to each employed person
         unemployment: val(0.1, 0, 0.2), // rate of not employed
         skill: 2, // how much food each employed farmed produces
+        unhoused: 0, // can't afford housing
+      },
+    },
+
+    ['Working Class']: {
+      name: 'Working Class',
+      description: 'Factory workers are employed by the corporations and work to ' +
+        'produce the goods people need',
+      wealth: 500000,
+      taxRate: val(0.3, 0, 0.4),
+      subsidy: val(0, 0, 10000),
+      population: val(10000, 10000, 50000),
+      favorability: 50,
+      favTotal: 0,
+      props: {
+        unemployment: val(0.1, 0, 0.3), // rate of not employed
+        wage: val(3, 4, 7), // wage going to each employed person
+        demand: 1, // how much inventory each person wants
         unhoused: 0, // can't afford housing
       },
     },
@@ -310,6 +309,27 @@ const policies = [
         mult = 3;
       }
       return mult * (100 - game.factions['Corporations'].favorability);
+    },
+  },
+  {
+    name: 'Raise Farmers Tax Rate',
+    description: "In these times of austerity, everyone must chip in to keep " +
+      "society afloat.",
+    support: ['Corporations', 'Landowners'],
+    oppose: ['Farmers'],
+    changes: (game) => {
+      return [{
+        path: ['factions', 'Farmers', 'taxRate'],
+        operation: 'MULTIPLY',
+        value: val(1, 11, 20) / 10,
+      }];
+    },
+    getWeight: (game) => {
+      let mult = 1;
+      if (game.capital < 100000) {
+        mult = 3;
+      }
+      return mult * (100 - game.factions['Landowners'].favorability);
     },
   },
   {
@@ -1060,7 +1080,127 @@ const policies = [
     },
   },
 
-  // Army policies
+  // Farmer Policies
+  {
+    name: 'Lower Farmers Tax Rate',
+    description: "Enough is enough! We must stop taking so much from the people!",
+    support: ['Farmers'],
+    oppose: ['Corporations'],
+    changes: (game) => {
+      return [{
+        path: ['factions', 'Farmers', 'taxRate'],
+        operation: 'MULTIPLY',
+        value: val(0.5, 0.3, 0.9),
+      }];
+    },
+    getWeight: (game) => {
+      return 100 - game.factions['Farmers'].favorability;
+    },
+  },
+  {
+    name: 'Raise Farmers Wages',
+    description: "All workers deserve a living wage",
+    support: ['Farmers'],
+    oppose: ['Corporations', 'Landowners'],
+    changes: (game) => {
+      return [{
+        path: ['factions', 'Farmers', 'props', 'wage'],
+        operation: 'ADD',
+        value: val(3, 1, 4),
+      }];
+    },
+    getWeight: (game) => {
+      return 2 * (100 - game.factions['Farmers'].favorability);
+    },
+  },
+  {
+    name: 'Subsidize Farmers',
+    description: 'Farmers are the bedrock of the economy so we need to give all the ' +
+      'support that we can afford.',
+    support: ['Farmers'],
+    oppose: ['Corporations', 'Middle Class', 'Landowners'],
+    changes: (game) => {
+      return [{
+        path: ['factions', 'Farmers', 'subsidy'],
+        operation: 'ADD',
+        value: val(15000, 5000, 25000),
+      }];
+    },
+    useOnce: false,
+    getWeight: (game) => {
+      return 2 * (100 - game.factions['Farmers'].favorability);
+    },
+  },
+  {
+    name: 'Farmers Relief Checks',
+    description: 'Farmers are the bedrock of the economy so we need to give all the ' +
+      'support that we can afford.',
+    support: ['Farmers'],
+    oppose: ['Corporations', 'Landowners'],
+    changes: (game) => {
+      const handout = Math.min(val(100000, 50000, 150000), game.capital);
+      return [
+        {
+          path: ['factions', 'Farmers', 'wealth'],
+          operation: 'ADD',
+          value: handout,
+        },
+        {
+          path: ['capital'],
+          operation: 'ADD',
+          value: -1 * handout,
+        },
+      ];
+    },
+    useOnce: false,
+    getWeight: (game) => {
+      return 100 - game.factions['Farmers'].favorability;
+    },
+  },
+  {
+    name: "Worker's Rights Overhaul",
+    isRadical: true,
+    description: "We need radical solutions to get the Farmers back on track",
+    support: ['Farmers'],
+    oppose: ['Corporations', 'Landowners'],
+    changes: (game) => {
+      const handout = Math.min(val(100000, 50000, 150000), game.capital);
+      return [
+        {
+          path: ['factions', 'Farmers', 'wealth'],
+          operation: 'ADD',
+          value: handout,
+        },
+        {
+          path: ['capital'],
+          operation: 'ADD',
+          value: -1 * handout,
+        },
+        {
+          path: ['factions', 'Farmers', 'props', 'wage'],
+          operation: 'ADD',
+          value: 5,
+        },
+        {
+          path: ['factions', 'Farmers', 'props', 'unemployment'],
+          operation: 'MULTIPLY',
+          value: 0.1,
+        },
+        {
+          path: ['factions', 'Farmers', 'favorability'],
+          operation: 'ADD',
+          value: 20,
+        },
+      ];
+    },
+    getWeight: (game) => {
+      if (game.factions['Farmers'].favorability > 0) {
+        return 1;
+      } else {
+        return 10000;
+      }
+    },
+  },
 ];
 
 

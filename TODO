@@ -1,17 +1,18 @@
 - - - - - PLAYTEST - - - - - -
   - with policy popping in your face every tick hard focus on what's changing
     - show way less information (to fit on mobile?)
-  - farmer policies
-    - policy to switch workers to farmers and back
-    - raise/lower taxes
-    - raise subsidies
-    - intelligentsia raising skills
   - what if middle class work for the other classes
     - upkeep for intelligentsia, marketing for corps,
+  - corporations can hit 0 favorability with plenty of money and keep wanting the massive
+    bailout.
+    - need a separate bailout like strike breaking, or that doesn't raise prices
+  - with farms added:
+    - additional costs for all groups add up fast
+    - policy to switch workers to farmers and back
+  - policy to print money (but increase prices/rents)
 
 
 - - - - - BALANCE - - - - - -
-  - policy to print money (but increase prices/rents)
   - upkeepCosts just erase money --> who are they paying?
   - policies should be more likely based on wealth/wealthDelta of factions
     - policies that reduce benefits should be inverse weighted
