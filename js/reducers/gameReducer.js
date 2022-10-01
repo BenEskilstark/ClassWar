@@ -524,6 +524,7 @@ const gameReducer = (game, action) => {
 
 
       // compute purchase/consumption of food
+      lords.wealthDelta['Food purchased'] = 0;
       for (const factionName in game.factions) {
         const faction = game.factions[factionName];
         let {
@@ -554,7 +555,7 @@ const gameReducer = (game, action) => {
           faction.wealth -= foodBought;
           faction.wealthDelta['Food purchased'] = -1 * foodBought;
           lords.wealth += foodBought;
-          lords.wealthDelta['Food purchased by ' + factionName] = foodBought;
+          lords.wealthDelta['Food purchased'] += foodBought;
         }
         lords.props.foodInventory = nextFood;
         lords.props.foodInventoryDelta[`Consumed by ${factionName}`] = -1 * foodBought;
@@ -654,6 +655,7 @@ const gameReducer = (game, action) => {
         faction.population = Math.floor(faction.population);
       }
       corps.props.inventory = Math.floor(corps.props.inventory);
+      farmers.props.foodInventory = Math.floor(farmers.props.foodInventory);
 
 
       return game;

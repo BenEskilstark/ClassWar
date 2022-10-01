@@ -1,16 +1,10 @@
+
 - - - - - PLAYTEST - - - - - -
   - upkeepCosts just erase money --> who are they paying?
-  - consolidate food purchased deltas for landlords
-  - make step bigger, allow spacebar, other hotkeys
   - policies
-    - bailout landowners/corporations when they run out of money
     - policy which detects running out of food
     - when a faction can't afford to pay for what it needs, make favorable policies more likely
-    - reclaim landowner's money is too frequent now
     - policy to print money (but increase prices/rents)
-  - turn something red if it is currently applying a favorability penalty
-  - what if middle class work for the other classes
-    - upkeep for intelligentsia, marketing for corps,
   - corporations can hit 0 favorability with plenty of money and keep wanting the massive
     bailout.
     - need a separate bailout like strike breaking, or that doesn't raise prices
@@ -21,6 +15,8 @@
 
 
 - - - - - - POSSIBLE CHANGE - - - - - -
+  - what if middle class work for the other classes
+    - upkeep for intelligentsia, marketing for corps,
   - with policy popping in your face every tick hard to focus on what's changing
     - show way less information (to fit on mobile?)
   - could make it play in real time while you deliberate on policies with more

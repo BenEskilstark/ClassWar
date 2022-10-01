@@ -13,6 +13,7 @@ const {
   displayMoney, displayPercent,
 } = require('../utils/display');
 const {initGameOverSystem} = require('../systems/gameOverSystem');
+const {initKeyboardControlsSystem} = require('../systems/keyboardControlsSystem');
 const {initEventsSystem} = require('../systems/eventsSystem');
 const {useState, useMemo, useEffect, useReducer} = React;
 
@@ -34,7 +35,9 @@ function Game(props: Props): React.Node {
   // initializations
   useEffect(() => {
     initGameOverSystem(store);
+    initKeyboardControlsSystem(store);
     initEventsSystem(store);
+    registerHotkeys(dispatch);
   }, []);
 
   const factions = useMemo(() => {
@@ -129,20 +132,8 @@ function Info(props): React.Node {
         Capital: {displayMoney(game.capital)} <Indicator value={game.capital} />
       </Value>
       <Button
-        id={game.tickInterval ? '' : 'PLAY'}
-        label={game.tickInterval ? 'Pause' : 'Play'}
-        disabled={game.policy != null}
-        onClick={() => {
-          // dispatch({type: 'TICK'});
-          if (game.tickInterval) {
-            dispatch({type: 'STOP_TICK'});
-          } else {
-            dispatch({type: 'START_TICK'});
-          }
-        }}
-      />
-      <Button
-        label={'Step'}
+        id="PLAY"
+        label={'End Month'}
         disabled={game.policy != null || game.tickInterval}
         onClick={() => {
           dispatch({type: 'TICK'});
@@ -307,5 +298,17 @@ function Value(props): React.Node {
 }
 
 
+function registerHotkeys(dispatch) {
+  dispatch({
+    type: 'SET_HOTKEY', press: 'onKeyDown',
+    key: 'space',
+    fn: (s) => {
+      const game = s.getState().game;
+      if (game.policy == null) {
+        s.dispatch({type: 'TICK'});
+      }
+    }
+  });
+}
 
 module.exports = Game;

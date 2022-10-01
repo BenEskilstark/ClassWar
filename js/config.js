@@ -58,7 +58,7 @@ const config = {
     ['Landowners']: {
       name: 'Landowners',
       description: 'The landed aristocracy owns the land where people live and farm',
-      wealth: 1000000,
+      wealth: 3500000,
       taxRate: val(0.2, 0.2, 0.6),
       subsidy: val(0, 1000, 5000),
       population: val(50, 1, 100, true),
@@ -402,9 +402,6 @@ const policies = [
     },
     getWeight: (game) => {
       let mult = 1;
-      if (game.capital < 100000) {
-        mult = 5;
-      }
       return mult * (100 - game.factions['Intelligentsia'].favorability);
     },
   },
@@ -555,7 +552,11 @@ const policies = [
     },
     useOnce: false,
     getWeight: (game) => {
-      return 100 - game.factions['Corporations'].favorability;
+      let mult = 1;
+      if (game.factions['Corporations'].wealth < game.factions['Working Class'].population) {
+        mult = 4;
+      }
+      return mult * (100 - game.factions['Corporations'].favorability);
     },
   },
   {
@@ -984,6 +985,39 @@ const policies = [
     useOnce: false,
     getWeight: (game) => {
       return 100 - game.factions['Landowners'].favorability;
+    },
+  },
+  {
+    name: 'Landowner Handout',
+    description: 'Landowners are the bedrock of the economy so we need to give all the ' +
+      'support that we can afford.',
+    support: ['Landowners'],
+    oppose: ['Intelligentsia', 'Middle Class', 'Working Class'],
+    changes: (game) => {
+      const value = Math.min(val(250000, 100000, 500000), game.capital);
+      return [
+        {
+          path: ['factions', 'Landowners', 'wealth'],
+          operation: 'ADD',
+          value,
+        },
+        {
+          path: ['capital'],
+          operation: 'ADD',
+          value: -1 * value,
+        },
+      ];
+    },
+    useOnce: false,
+    getWeight: (game) => {
+      let mult = 1;
+      if (
+        game.factions['Landowners'].wealth < game.factions['Farmers'].population ||
+        game.factions['Landowners'].foodInventory == 0
+      ) {
+        mult = 5;
+      }
+      return (100 - game.factions['Landowners'].favorability) * mult;
     },
   },
 
