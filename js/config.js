@@ -1158,7 +1158,7 @@ const policies = [
     },
   },
   {
-    name: "Worker's Rights Overhaul",
+    name: "Farmer's Rights Overhaul",
     isRadical: true,
     description: "We need radical solutions to get the Farmers back on track",
     support: ['Farmers'],

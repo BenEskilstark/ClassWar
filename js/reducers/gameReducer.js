@@ -539,7 +539,7 @@ const gameReducer = (game, action) => {
           );
           let favPenalty = Math.round(foodDeficit / faction.population * 10);
           faction.favorability -= favPenalty;
-          faction.favorabilityDelta['Not enough food'] = -1 * favPenalty;
+          faction.favorabilityDelta['Not enough food'] = -1 * favPenalty / 100;
         }
         if (faction.wealth < faction.population) {
           appendTicker(game,
@@ -548,7 +548,7 @@ const gameReducer = (game, action) => {
           let favPenalty = Math.round(
             (faction.population - faction.wealth) / faction.population * 10);
           faction.favorability -= favPenalty;
-          faction.favorabilityDelta['Can\'t afford food'] = -1 * favPenalty;
+          faction.favorabilityDelta['Can\'t afford food'] = -1 * favPenalty / 100;
         }
         if (factionName != 'Landowners') {
           faction.wealth -= foodBought;
@@ -562,7 +562,7 @@ const gameReducer = (game, action) => {
 
 
       // corporate taxes
-      const corpProfit = midSpend + poorSpend;
+      const corpProfit = midSpend + poorSpend + farmerSpend;
       const corpTaxesCollected = corpProfit * corps.taxRate;
       game.capital += corpTaxesCollected;
       game.capitalDelta['Corporate taxes'] = corpTaxesCollected;
@@ -595,7 +595,7 @@ const gameReducer = (game, action) => {
       }
 
 
-      // compute favorability (gdp change, taxRate, wealth change, unemployment)
+      // compute favorability (taxRate, wealth change, unemployment)
       for (const factionName in game.factions) {
         const faction = game.factions[factionName];
         if (

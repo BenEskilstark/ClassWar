@@ -1880,7 +1880,7 @@ var gameReducer = function gameReducer(game, action) {
         }
 
         // corporate taxes
-        var corpProfit = midSpend + poorSpend;
+        var corpProfit = midSpend + poorSpend + farmerSpend;
         var corpTaxesCollected = corpProfit * corps.taxRate;
         game.capital += corpTaxesCollected;
         game.capitalDelta['Corporate taxes'] = corpTaxesCollected;

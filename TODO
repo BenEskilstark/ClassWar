@@ -1,32 +1,48 @@
 - - - - - PLAYTEST - - - - - -
-  - with policy popping in your face every tick hard focus on what's changing
-    - show way less information (to fit on mobile?)
+  - upkeepCosts just erase money --> who are they paying?
+  - consolidate food purchased deltas for landlords
+  - make step bigger, allow spacebar, other hotkeys
+  - policies
+    - bailout landowners/corporations when they run out of money
+    - policy which detects running out of food
+    - when a faction can't afford to pay for what it needs, make favorable policies more likely
+    - reclaim landowner's money is too frequent now
+    - policy to print money (but increase prices/rents)
+  - turn something red if it is currently applying a favorability penalty
   - what if middle class work for the other classes
     - upkeep for intelligentsia, marketing for corps,
   - corporations can hit 0 favorability with plenty of money and keep wanting the massive
     bailout.
     - need a separate bailout like strike breaking, or that doesn't raise prices
   - with farms added:
-    - additional costs for all groups add up fast
+    - farmer wages are too high (no rent tho?)
     - policy to switch workers to farmers and back
-  - policy to print money (but increase prices/rents)
+    - say how short of food they are when don't have enough
+
+
+- - - - - - POSSIBLE CHANGE - - - - - -
+  - with policy popping in your face every tick hard to focus on what's changing
+    - show way less information (to fit on mobile?)
+  - could make it play in real time while you deliberate on policies with more
+    forgiving monies/favorabilities
 
 
 - - - - - BALANCE - - - - - -
-  - upkeepCosts just erase money --> who are they paying?
+  - strategy problems?
+    - can keep favorability artificially high just by rejecting policies they oppose
+    - awkward when one policy is clearly necessary to survive but won't get recommended
+    - what's stopping strategy of just always choosing policy to help poorest faction?
+      - policies need more/nuanced changes?
+    - initial conditions -> which factions are net positive, inventory, food,
+      - easy/medium/hard/random with number of deltas?
   - policies should be more likely based on wealth/wealthDelta of factions
     - policies that reduce benefits should be inverse weighted
   - just can't raise prices without raising wages for working class
   - too many policies that punish working/middle when corps are doing poorly don't
     actually help the corporations
-  - landowners still suck up all the wealth
-  - can keep favorability artificially high just by rejecting policies they oppose
   - worker's wage must be more than (price * demand + rent)
     - how else can corporations make money to afford this pay?
-  - awkward when one policy is clearly necessary to survive but won't get recommended
   - skill of middle class (universities!) just doesn't seem to matter
-  - what's stopping strategy of just always choosing policy to help poorest faction?
-    - policies need more/nuanced changes
 
 
 - - - - - - BUGS - - - - - -
