@@ -1,5 +1,6 @@
 
 - - - - - PLAYTEST - - - - - -
+  - Each time a policy is minimized/maximized the values are re-computed
   - upkeepCosts just erase money --> who are they paying?
   - policies
     - policy which detects running out of food
@@ -12,6 +13,7 @@
     - farmer wages are too high (no rent tho?)
     - policy to switch workers to farmers and back
     - say how short of food they are when don't have enough
+  - farmers end up with foodInventory: NaN when they shouldn't have that property at all
 
 
 - - - - - - POSSIBLE CHANGE - - - - - -

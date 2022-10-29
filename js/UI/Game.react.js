@@ -4,10 +4,9 @@ const React = require('react');
 const {
   Button, InfoCard, Divider,
   Plot, plotReducer,
-  Modal,
+  Modal, Indicator,
 } = require('bens_ui_components');
 const PolicyModal = require('./PolicyModal.react');
-const Indicator = require('./Indicator.react');
 const {config} = require('../config');
 const {
   displayMoney, displayPercent,

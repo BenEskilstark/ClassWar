@@ -22,7 +22,7 @@
   "dependencies": {
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-flow": "^6.23.0",
-    "bens_ui_components": "^1.4.58",
+    "bens_ui_components": "^1.4.62",
     "bens_utils": "^1.0.1",
     "express": "^4.17.2",
     "pg": "^8.7.1",
