@@ -16,6 +16,9 @@ const gameReducer = (game, action) => {
     case 'SET': {
       const {property, value} = action;
       game[property] = value;
+      if (property == 'policy' && value != null) {
+        game.policy = {...value, changes: value.changes(game)};
+      }
       return game;
     }
     case 'POLICY_CHANGE': {
@@ -383,7 +386,7 @@ const gameReducer = (game, action) => {
       game.capital += lordsTaxesCollected;
       game.capitalDelta['Landowner taxes'] = lordsTaxesCollected;
       lords.wealth += lordsProfit - lordsTaxesCollected;
-      lords.wealthDelta['Rental profits'] = lordsProfit;
+      lords.wealthDelta['Rental revenue'] = lordsProfit;
       lords.wealthDelta['Taxes paid'] = -1 * lordsTaxesCollected;
 
       // compute production of food
@@ -524,7 +527,7 @@ const gameReducer = (game, action) => {
 
 
       // compute purchase/consumption of food
-      lords.wealthDelta['Food purchased'] = 0;
+      lords.wealthDelta['Food sale revenue'] = 0;
       for (const factionName in game.factions) {
         const faction = game.factions[factionName];
         let {
@@ -568,7 +571,7 @@ const gameReducer = (game, action) => {
       game.capital += corpTaxesCollected;
       game.capitalDelta['Corporate taxes'] = corpTaxesCollected;
       corps.wealth += corpProfit - corpTaxesCollected;
-      corps.wealthDelta['Business profits'] = corpProfit;
+      corps.wealthDelta['Business revenue'] = corpProfit;
       corps.wealthDelta['Taxes paid'] = -1 * corpTaxesCollected;
 
 
@@ -655,7 +658,7 @@ const gameReducer = (game, action) => {
         faction.population = Math.floor(faction.population);
       }
       corps.props.inventory = Math.floor(corps.props.inventory);
-      farmers.props.foodInventory = Math.floor(farmers.props.foodInventory);
+      lords.props.foodInventory = Math.floor(lords.props.foodInventory);
 
 
       return game;

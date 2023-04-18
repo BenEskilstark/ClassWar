@@ -1,6 +1,26 @@
+- - - - - - REVISION 2023 - - - - - -
+  - rule as a coalition of factions (2 or 3). Only their favorability matters
+    but then the other way to lose would be societal collapse (ie lack of food or materials)
+  - The pairs
+    - Worker + Farmer               = Communism
+    - Worker + Corporations         = Capitalism
+    - Worker + Middle Class         = Labor
+    - Worker + Landowners           = Fascism
+    - Worker + Intelligentsia       = Leninism
+    - Farmer + Landowners           = Settler Colonialism
+    - Farmer + Corporations         = Libertarianism (Conservatism)
+    - Farmer + Middle Class         = Social Democracy
+    - Farmer + Intelligentsia       = Eco-Populism
+    - Corporations + Middle Class   = Neoliberalism
+    - Corporations + Intelligentsia = Technocracy
+    - Corporations + Landowners     = Oligarchy
+    - Landowners + Intelligentsia   = Aristocracy (Ancienne Regime)
+    - Landowners + Middle Class     = Theocracy
+    - Middle Class + Intelligentsia = Republic
+
+
 
 - - - - - PLAYTEST - - - - - -
-  - Each time a policy is minimized/maximized the values are re-computed
   - upkeepCosts just erase money --> who are they paying?
   - policies
     - policy which detects running out of food
@@ -13,7 +33,6 @@
     - farmer wages are too high (no rent tho?)
     - policy to switch workers to farmers and back
     - say how short of food they are when don't have enough
-  - farmers end up with foodInventory: NaN when they shouldn't have that property at all
 
 
 - - - - - - POSSIBLE CHANGE - - - - - -

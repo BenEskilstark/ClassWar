@@ -27,7 +27,7 @@ function PolicyModal(props) {
       policy = props.policy,
       game = props.game;
 
-  var changes = policy.changes(game);
+  var changes = policy.changes;
 
   var prettifiedChanges = [];
   var _iteratorNormalCompletion = true;
@@ -1402,6 +1402,9 @@ var gameReducer = function gameReducer(game, action) {
             value = action.value;
 
         game[property] = value;
+        if (property == 'policy' && value != null) {
+          game.policy = _extends({}, value, { changes: value.changes(game) });
+        }
         return game;
       }
     case 'POLICY_CHANGE':
@@ -1744,7 +1747,7 @@ var gameReducer = function gameReducer(game, action) {
         game.capital += lordsTaxesCollected;
         game.capitalDelta['Landowner taxes'] = lordsTaxesCollected;
         lords.wealth += lordsProfit - lordsTaxesCollected;
-        lords.wealthDelta['Rental profits'] = lordsProfit;
+        lords.wealthDelta['Rental revenue'] = lordsProfit;
         lords.wealthDelta['Taxes paid'] = -1 * lordsTaxesCollected;
 
         // compute production of food
@@ -1875,7 +1878,7 @@ var gameReducer = function gameReducer(game, action) {
         farmers.wealthDelta['Goods purchased'] = -1 * farmerSpend;
 
         // compute purchase/consumption of food
-        lords.wealthDelta['Food purchased'] = 0;
+        lords.wealthDelta['Food sale revenue'] = 0;
         for (var _factionName3 in game.factions) {
           var _faction2 = game.factions[_factionName3];
 
@@ -1912,7 +1915,7 @@ var gameReducer = function gameReducer(game, action) {
         game.capital += corpTaxesCollected;
         game.capitalDelta['Corporate taxes'] = corpTaxesCollected;
         corps.wealth += corpProfit - corpTaxesCollected;
-        corps.wealthDelta['Business profits'] = corpProfit;
+        corps.wealthDelta['Business revenue'] = corpProfit;
         corps.wealthDelta['Taxes paid'] = -1 * corpTaxesCollected;
 
         // upkeep costs
@@ -1975,7 +1978,7 @@ var gameReducer = function gameReducer(game, action) {
           _faction5.population = Math.floor(_faction5.population);
         }
         corps.props.inventory = Math.floor(corps.props.inventory);
-        farmers.props.foodInventory = Math.floor(farmers.props.foodInventory);
+        lords.props.foodInventory = Math.floor(lords.props.foodInventory);
 
         return game;
       }
@@ -2179,7 +2182,10 @@ var initEventsSystem = function initEventsSystem(store) {
       dispatch({ type: 'SET', property: 'policy', value: chosenPolicy });
       dispatch({
         type: 'SET_MODAL',
-        modal: React.createElement(PolicyModal, { dispatch: dispatch, policy: chosenPolicy, game: game })
+        modal: React.createElement(PolicyModal, {
+          dispatch: dispatch, policy: store.getState().game.policy,
+          game: game
+        })
       });
     }
   });

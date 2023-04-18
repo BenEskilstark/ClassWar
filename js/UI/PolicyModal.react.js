@@ -12,7 +12,7 @@ const {useState, useMemo, useEffect, useReducer} = React;
 
 function PolicyModal(props): React.Node {
   const {dispatch, policy, game} = props;
-  const changes = policy.changes(game);
+  const changes = policy.changes;
 
   const prettifiedChanges = [];
   for (const change of changes) {
