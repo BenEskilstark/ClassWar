@@ -70,10 +70,8 @@
   - have description as first line of hovercards?
   - also hovercard description of each faction on their name
   - rename Factions to Class?
-  - View Policy button should hide it when clicked again
   - add government type to main info based on favorability
     (and wealth? or history of favorable policies)
-  - get up and down arrows to look the same
   - better printing of faction props
   - better lay out of the policy UI and percents/dollars and buttons
 
@@ -88,7 +86,6 @@
       - middle/working class -> strikes
       - corps -> raising prices
       - landowners -> raising rents
-      - military ->
       - intelligentsia -> leave (reducing bonuses?)
     - bonuses for high favorability ?
       - poor -> ?
@@ -104,7 +101,6 @@
 
 
 - - - - - POLISH/FLAVOR - - - - -
-  - have factions at/near 0% favorability blink or something
   - need dicts for money/percents
     - in policy_change, in policy display, in game ui
     - specifically favorability

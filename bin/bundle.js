@@ -1903,7 +1903,7 @@ var gameReducer = function gameReducer(game, action) {
             _faction2.wealth -= foodBought;
             _faction2.wealthDelta['Food purchased'] = -1 * foodBought;
             lords.wealth += foodBought;
-            lords.wealthDelta['Food purchased'] += foodBought;
+            lords.wealthDelta['Food sale revenue'] += foodBought;
           }
           lords.props.foodInventory = nextFood;
           lords.props.foodInventoryDelta['Consumed by ' + _factionName3] = -1 * foodBought;
@@ -2481,6 +2481,8 @@ module.exports = { initKeyboardControlsSystem: initKeyboardControlsSystem };
 },{}],11:[function(require,module,exports){
 'use strict';
 
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
@@ -2551,8 +2553,8 @@ function Game(props) {
   }, [game.time, game.policy != null]);
 
   var govInfo = useMemo(function () {
-    return React.createElement(Info, { game: game, dispatch: dispatch });
-  }, [game.time, game.policy != null]);
+    return React.createElement(Info, { game: game, dispatch: dispatch, state: state });
+  }, [game.time, game.policy != null, state.modal]);
 
   return React.createElement(
     'div',
@@ -2611,7 +2613,8 @@ function Ticker(props) {
 }
 
 function Info(props) {
-  var game = props.game,
+  var state = props.state,
+      game = props.game,
       dispatch = props.dispatch;
 
 
@@ -2646,13 +2649,17 @@ function Info(props) {
       'div',
       null,
       React.createElement(Button, {
-        label: 'View Policy Proposal',
+        label: (state.modal ? 'Hide' : 'View') + ' Policy Proposal',
         disabled: game.policy == null,
         onClick: function onClick() {
-          dispatch({
-            type: 'SET_MODAL',
-            modal: React.createElement(PolicyModal, { dispatch: dispatch, policy: game.policy, game: game })
-          });
+          if (state.modal) {
+            dispatch({ type: 'DISMISS_MODAL' });
+          } else {
+            dispatch({
+              type: 'SET_MODAL',
+              modal: React.createElement(PolicyModal, { dispatch: dispatch, policy: game.policy, game: game })
+            });
+          }
         }
       })
     )
@@ -2702,6 +2709,36 @@ function Faction(properties) {
   //   height = 168.5;
   // }
 
+  var _useState = useState(4),
+      _useState2 = _slicedToArray(_useState, 2),
+      favOpacity = _useState2[0],
+      setFavOpacity = _useState2[1]; // divided by 10
+
+
+  var _useState3 = useState(1),
+      _useState4 = _slicedToArray(_useState3, 2),
+      dir = _useState4[0],
+      setDir = _useState4[1];
+
+  useEffect(function () {
+    var interval = null;
+    if (favorability <= 5) {
+      interval = setInterval(function () {
+        var nextOpacity = favOpacity + dir;
+        if (nextOpacity == 5 || nextOpacity == 0) {
+          setDir(dir * -1);
+        }
+        setFavOpacity(nextOpacity);
+      }, 50);
+    } else if (favorability > 5) {
+      clearInterval(interval);
+    }
+
+    return function () {
+      return clearInterval(interval);
+    };
+  }, [favorability <= 5, favOpacity, dir]);
+
   return React.createElement(
     'div',
     {
@@ -2717,6 +2754,7 @@ function Faction(properties) {
         style: {
           width: '-webkit-fill-available',
           padding: '2px',
+          backgroundColor: favorability <= 5 ? 'rgba(255,192,203,' + favOpacity / 10 + ')' : 'white',
           height: height
         }
       },

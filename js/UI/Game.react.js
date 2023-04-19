@@ -53,9 +53,9 @@ function Game(props: Props): React.Node {
 
   const govInfo = useMemo(() => {
     return (
-      <Info game={game} dispatch={dispatch} />
+      <Info game={game} dispatch={dispatch} state={state} />
     );
-  }, [game.time, game.policy != null]);
+  }, [game.time, game.policy != null, state.modal]);
 
   return (
     <div>
@@ -115,7 +115,7 @@ function Ticker(props): React.Node {
 }
 
 function Info(props): React.Node {
-  const {game, dispatch} = props;
+  const {state, game, dispatch} = props;
 
   return (
     <InfoCard
@@ -140,13 +140,17 @@ function Info(props): React.Node {
       />
       <div>
         <Button
-          label="View Policy Proposal"
+          label={`${state.modal ? 'Hide' : 'View'} Policy Proposal`}
           disabled={game.policy == null}
           onClick={() => {
-            dispatch({
-              type: 'SET_MODAL',
-              modal: <PolicyModal dispatch={dispatch} policy={game.policy} game={game} />,
-            });
+            if (state.modal) {
+              dispatch({type: 'DISMISS_MODAL'});
+            } else {
+              dispatch({
+                type: 'SET_MODAL',
+                modal: <PolicyModal dispatch={dispatch} policy={game.policy} game={game} />,
+              });
+            }
           }}
         />
       </div>
@@ -193,6 +197,26 @@ function Faction(properties): React.Node {
   //   height = 168.5;
   // }
 
+  const [favOpacity, setFavOpacity] = useState(4); // divided by 10
+  const [dir, setDir] = useState(1);
+  useEffect(() => {
+    let interval = null;
+    if (favorability <= 5) {
+      interval = setInterval(() => {
+        const nextOpacity = (favOpacity + dir);
+        if (nextOpacity == 5 || nextOpacity == 0) {
+          setDir(dir * -1);
+        }
+        setFavOpacity(nextOpacity);
+      }, 50);
+    } else if (favorability > 5) {
+      clearInterval(interval);
+    }
+
+    return () => clearInterval(interval);
+  }, [favorability <= 5, favOpacity, dir]);
+
+
   return (
     <div
       style={{
@@ -205,6 +229,7 @@ function Faction(properties): React.Node {
       style={{
         width: '-webkit-fill-available',
         padding: '2px',
+        backgroundColor: favorability <= 5 ? `rgba(255,192,203,${favOpacity / 10})` : 'white',
         height,
       }}
     >

@@ -558,7 +558,7 @@ const gameReducer = (game, action) => {
           faction.wealth -= foodBought;
           faction.wealthDelta['Food purchased'] = -1 * foodBought;
           lords.wealth += foodBought;
-          lords.wealthDelta['Food purchased'] += foodBought;
+          lords.wealthDelta['Food sale revenue'] += foodBought;
         }
         lords.props.foodInventory = nextFood;
         lords.props.foodInventoryDelta[`Consumed by ${factionName}`] = -1 * foodBought;
